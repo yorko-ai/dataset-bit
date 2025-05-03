@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Dataset-Bit</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <style>
+        body { margin:0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; background: #f5f7fa;}
+        .top-menu { background: #fff; border-bottom:1px solid #e5e6eb; height: 56px; display: flex; align-items: center; padding: 0 40px; }
+        .top-menu .logo { font-weight: bold; color: #409EFF; font-size: 22px; margin-right: 40px; }
+        .top-menu a { color: #333; margin-right: 32px; text-decoration: none; font-size: 16px; line-height: 56px; padding: 0 8px; border-radius: 4px; transition: background .2s;}
+        .top-menu a.active, .top-menu a:hover { background: #ecf5ff; color: #409EFF; }
+        .main-content { padding: 40px 0; max-width: 1200px; margin: 0 auto; }
+        h2 { font-size: 1.5rem; font-weight: bold; margin-bottom: 24px; }
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.06); padding: 32px 36px 36px 36px; }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="top-menu">
+        <span class="logo">Dataset-Bit</span>
+        <a href="/file.html" class="{% if page == 'file' %}active{% endif %}">📁 文件管理</a>
+        <a href="/chunk.html" class="{% if page == 'chunk' %}active{% endif %}">🧩 分块管理</a>
+        <a href="/dataset.html" class="{% if page == 'dataset' %}active{% endif %}">📊 数据导出</a>
+        <a href="/settings.html" class="{% if page == 'settings' %}active{% endif %}">⚙️ 系统设置</a>
+    </div>
+    <div class="main-content">
+        <div class="card">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+</html> 

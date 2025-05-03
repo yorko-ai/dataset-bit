@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% set page = 'dataset' %}
+{% block head %}
+<style>
+.table-flat {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+.table-flat th, .table-flat td {
+    padding: 14px 18px;
+    text-align: left;
+    background: #fff;
+}
+.table-flat th {
+    background: #f7f8fa;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+}
+.table-flat tr {
+    transition: background 0.2s;
+}
+.table-flat tr:hover {
+    background: #f5f7fa;
+}
+.table-flat td {
+    border-bottom: 1px solid #f0f0f0;
+    color: #444;
+}
+.table-flat tr:last-child td {
+    border-bottom: none;
+}
+</style>
+{% endblock %}
+{% block content %}
+<h2>数据导出</h2>
+<div style="margin-bottom: 16px;">
+    <button class="btn" onclick="showExportDialog()" id="exportBtn" disabled>批量导出</button>
+</div>
+<table class="table-flat">
+    <thead>
+        <tr>
+            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+            <th>文件名</th>
+            <th>问答对数量</th>
+            <th>创建时间</th>
+        </tr>
+    </thead>
+    <tbody id="datasetTableBody"></tbody>
+</table>
+
+<!-- 导出参数弹窗 -->
+<div id="exportDialog" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.15); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:10px; padding:32px 36px; min-width:320px; box-shadow:0 2px 12px 0 rgba(0,0,0,0.12);">
+    <h3 style="margin-bottom:18px;">导出数据集</h3>
+    <div style="margin-bottom:16px;">
+      <label>导出格式：</label>
+      <select id="exportFormat">
+        <option value="alpaca">Alpaca</option>
+        <option value="sharegpt">ShareGPT</option>
+      </select>
+    </div>
+    <div style="margin-bottom:24px;">
+      <label>文件类型：</label>
+      <select id="exportType">
+        <option value="json">JSON</option>
+        <option value="csv">CSV</option>
+        <option value="md">MD</option>
+      </select>
+    </div>
+    <div style="text-align:right;">
+      <button id="exportConfirmBtn" class="btn">确定导出</button>
+      <button onclick="closeExportDialog()" class="btn btn-danger">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedFiles = new Set();
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.file-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+        if (selectAll.checked) {
+            selectedFiles.add(checkbox.value);
+        } else {
+            selectedFiles.delete(checkbox.value);
+        }
+    });
+    updateExportButton();
+}
+
+function toggleFile(fileId) {
+    if (selectedFiles.has(fileId)) {
+        selectedFiles.delete(fileId);
+    } else {
+        selectedFiles.add(fileId);
+    }
+    updateExportButton();
+}
+
+function updateExportButton() {
+    const exportBtn = document.getElementById('exportBtn');
+    exportBtn.disabled = selectedFiles.size === 0;
+}
+
+function showExportDialog() {
+    if (selectedFiles.size === 0) return;
+    document.getElementById('exportDialog').style.display = 'flex';
+}
+
+function closeExportDialog() {
+    document.getElementById('exportDialog').style.display = 'none';
+}
+
+document.getElementById('exportConfirmBtn').onclick = async function() {
+    const format = document.getElementById('exportFormat').value;
+    const type = document.getElementById('exportType').value;
+    closeExportDialog();
+    await exportDatasets(Array.from(selectedFiles), format, type);
+}
+
+async function loadDatasets() {
+    const resp = await fetch('/api/datasets');
+    const datasets = await resp.json();
+    const tbody = document.getElementById('datasetTableBody');
+    tbody.innerHTML = '';
+    datasets.forEach(d => {
+        tbody.innerHTML += `<tr>
+            <td><input type="checkbox" class="file-checkbox" value="${d.id}" onchange="toggleFile(${d.id})"></td>
+            <td>${d.filename || d.name}</td>
+            <td>${d.qa_count || 0}</td>
+            <td>${d.created_at || ''}</td>
+        </tr>`;
+    });
+}
+
+async function exportDatasets(fileIds, format = 'alpaca', type = 'json') {
+    const resp = await fetch(`/api/datasets_export?ids=${fileIds.join(',')}&format=${format}&type=${type}`, {method:'GET'});
+    if (resp.ok) {
+        const blob = await resp.blob();
+        let ext = type;
+        if (type === 'md') ext = 'md';
+        if (type === 'csv') ext = 'csv';
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dataset_export_${format}.${ext}`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } else {
+        alert('导出失败');
+    }
+}
+
+loadDatasets();
+</script>
+{% endblock %} 

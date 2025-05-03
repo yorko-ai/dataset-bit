@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue"></script>
+<style>
+    .file-select { margin-bottom: 20px; }
+    .pagination { margin-top: 20px; text-align: right; }
+    .chunk-content {
+        max-width: 900px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .btn {
+        padding: 6px 16px;
+        border: none;
+        border-radius: 4px;
+        background: #409EFF;
+        color: #fff;
+        cursor: pointer;
+        margin-right: 8px;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+    .btn:hover { background: #337ecc; }
+    .btn-danger { background: #e74c3c; }
+    .btn-danger:hover { background: #c0392b; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% raw %}
+<div id="app">
+    <h2>分块管理</h2>
+    
+    <div class="file-select">
+        <el-select v-model="selectedFileId" placeholder="请选择文件" @change="fetchChunks">
+            <el-option
+                v-for="file in files"
+                :key="file.id"
+                :label="file.file_name"
+                :value="file.id">
+            </el-option>
+        </el-select>
+    </div>
+    <div style="margin: 16px 0;display:flex;align-items:center;">
+        <span style="margin-right:8px;">生成QA对数量</span>
+        <input v-model="qaNum" type="number" min="1" max="20" placeholder="生成问答对数量" style="width:160px; margin-right:12px;" />
+        <button class="btn" @click="generateQA" :disabled="selectedChunks.length===0 || !qaNum || generating">大模型生成</button>
+        <el-progress v-if="generating" :percentage="progress" style="width:200px;display:inline-block;margin-left:16px;vertical-align:middle;" :stroke-width="16" status="active"></el-progress>
+    </div>
+    <el-table v-if="chunks.length > 0" :data="chunks" style="width: 100%" @selection-change="handleSelectionChange" ref="chunkTable">
+        <el-table-column type="selection" width="48"></el-table-column>
+        <el-table-column label="分块内容" width="900">
+            <template v-slot="scope">
+                <div style="display:flex;align-items:center;">
+                    <span style="font-weight:bold;color:#409EFF;margin-right:8px;">[{{ scope.row.qa_count || 0 }}条问答]</span>
+                    <div class="chunk-content" :title="scope.row.full_content" style="flex:1;cursor:pointer;" @click="toggleQA(scope.row)">
+                        {{ scope.row.content }}
+                    </div>
+                </div>
+                <div v-if="scope.row.showQA" style="background:#f7f8fa;padding:12px 18px 8px 18px;margin-top:8px;border-radius:6px;">
+                    <div v-if="scope.row.qaLoading" style="color:#888;">加载中...</div>
+                    <div v-else-if="scope.row.qaList && scope.row.qaList.length">
+                        <div v-for="(qa, idx) in scope.row.qaList" :key="idx" style="margin-bottom:10px;">
+                            <div style="font-weight:bold;display:flex;align-items:center;">
+                                <span v-if="!qa.editing">Q: {{ qa.question }}</span>
+                                <input v-else v-model="qa.editQ" @blur="saveQA(scope.row, qa, idx)" style="flex:1;margin-right:8px;" />
+                                <span style="margin-left:8px;cursor:pointer;color:#409EFF;" @click="editQA(qa)">[修改]</span>
+                                <span style="margin-left:8px;cursor:pointer;color:#e74c3c;" @click="deleteQA(scope.row, qa, idx)">[删除]</span>
+                            </div>
+                            <div style="margin-left:18px;">
+                                <span v-if="!qa.editing">A: {{ qa.answer }}</span>
+                                <input v-else v-model="qa.editA" @blur="saveQA(scope.row, qa, idx)" style="width:90%;" />
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else style="color:#888;">暂无问答对</div>
+                </div>
+            </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100">
+            <template v-slot="scope">
+                <el-button type="danger" size="small" @click="handleDelete(scope.row.id)">删除</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+
+    <div v-else-if="selectedFileId" class="no-data">
+        该文件暂无分块数据
+    </div>
+
+    <div v-else class="no-data">
+        请选择文件查看分块数据
+    </div>
+
+    <div class="pagination" v-if="chunks.length > 0">
+        <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next"
+            :total="total"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange">
+        </el-pagination>
+    </div>
+</div>
+
+<script>
+const { createApp, ref, onMounted } = Vue
+
+createApp({
+    setup() {
+        const files = ref([])
+        const chunks = ref([])
+        const selectedFileId = ref('')
+        const currentPage = ref(1)
+        const pageSize = ref(10)
+        const total = ref(0)
+        const qaNum = ref(3)
+        const selectedChunks = ref([])
+        const chunkTable = ref(null)
+        const generating = ref(false)
+        const progress = ref(0)
+
+        const truncate = (text, len = 350) => {
+            if (!text) return '';
+            return text.length > len ? text.slice(0, len) + '...' : text;
+        }
+
+        const fetchFiles = async () => {
+            try {
+                const response = await fetch('/api/files')
+                const data = await response.json()
+                files.value = data.files
+                if (files.value.length > 0 && !selectedFileId.value) {
+                    selectedFileId.value = files.value[0].id
+                    fetchChunks()
+                }
+            } catch (error) {
+                console.error('获取文件列表失败:', error)
+                ElementPlus.ElMessage.error('获取文件列表失败')
+            }
+        }
+
+        const fetchChunks = async () => {
+            if (!selectedFileId.value) return
+            
+            try {
+                const response = await fetch(`/api/files/${selectedFileId.value}/chunks?page=${currentPage.value}&page_size=${pageSize.value}`)
+                const data = await response.json()
+                for (const chunk of data.chunks) {
+                    try {
+                        const qaResp = await fetch(`/api/chunks/${chunk.id}/qa`)
+                        const qaData = await qaResp.json()
+                        chunk.qa_count = qaData.count || 0
+                    } catch (e) {
+                        chunk.qa_count = 0
+                    }
+                }
+                chunks.value = data.chunks
+                total.value = data.total
+            } catch (error) {
+                console.error('获取分块列表失败:', error)
+                ElementPlus.ElMessage.error('获取分块列表失败')
+            }
+        }
+
+        const handleSizeChange = (val) => {
+            pageSize.value = val
+            fetchChunks()
+        }
+
+        const handleCurrentChange = (val) => {
+            currentPage.value = val
+            fetchChunks()
+        }
+
+        const handleDelete = (chunkId) => {
+            console.log('准备删除分块', chunkId);
+            ElementPlus.ElMessageBox.confirm('确定要删除该分块吗？', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning',
+                center: true
+            }).then(async () => {
+                try {
+                    const resp = await fetch(`/api/chunks/${chunkId}`, {
+                        method: 'DELETE',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    const data = await resp.json();
+                    console.log('删除响应', data);
+                    if (data.status === 'success') {
+                        ElementPlus.ElMessage.success('删除成功');
+                        fetchChunks();
+                    } else {
+                        ElementPlus.ElMessage.error(data.message || '删除失败');
+                    }
+                } catch (e) {
+                    console.error('删除分块异常', e);
+                    ElementPlus.ElMessage.error('删除失败');
+                }
+            }).catch(() => {
+                // 用户取消，无需处理
+            });
+        };
+
+        const handleSelectionChange = (val) => { selectedChunks.value = val }
+
+        const generateQA = async () => {
+            if (!selectedChunks.value.length || !qaNum.value) return
+            generating.value = true
+            progress.value = 0
+            // 模拟进度条（实际可用后端分步返回进度）
+            const timer = setInterval(() => {
+                if (progress.value < 90) progress.value += 5
+            }, 300)
+            const segments = selectedChunks.value.map(c => ({ id: c.id, content: c.content }))
+            const resp = await fetch('/api/generate-qa', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ segments, num_pairs: qaNum.value, file_id: selectedFileId.value })
+            })
+            const data = await resp.json()
+            clearInterval(timer)
+            progress.value = 100
+            generating.value = false
+            if (data.status === 'success') {
+                ElementPlus.ElMessageBox.alert(`问答生成并写入成功，共${data.count || 0}条`, '生成成功', {type:'success'})
+            } else {
+                ElementPlus.ElMessageBox.alert(data.message || '生成失败', '生成失败', {type:'error'})
+            }
+        }
+
+        const toggleQA = async (row) => {
+            if (row.showQA) {
+                row.showQA = false;
+                return;
+            }
+            if (!row.qaList) {
+                row.qaLoading = true;
+                try {
+                    const resp = await fetch(`/api/chunks/${row.id}/qa`);
+                    const data = await resp.json();
+                    if (data.status === 'success') {
+                        row.qaList = data.data;
+                    } else {
+                        row.qaList = [];
+                    }
+                } catch (e) {
+                    row.qaList = [];
+                }
+                row.qaLoading = false;
+            }
+            row.showQA = true;
+        }
+
+        // 新增：编辑和删除问答对
+        const editQA = (qa) => {
+            qa.editing = true;
+            qa.editQ = qa.question;
+            qa.editA = qa.answer;
+        }
+        const saveQA = async (row, qa, idx) => {
+            qa.editing = false;
+            // 调用后端保存接口
+            try {
+                const resp = await fetch(`/api/qa/${qa.id}/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: qa.editQ, answer: qa.editA })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    qa.question = qa.editQ;
+                    qa.answer = qa.editA;
+                } else {
+                    ElementPlus.ElMessage.error('保存失败');
+                }
+            } catch (e) {
+                ElementPlus.ElMessage.error('保存失败');
+            }
+        }
+        const deleteQA = async (row, qa, idx) => {
+            if (!confirm('确定要删除该问答对吗？')) return;
+            try {
+                const resp = await fetch(`/api/qa/${qa.id}/delete`, { method: 'POST' });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    row.qaList.splice(idx, 1);
+                } else {
+                    ElementPlus.ElMessage.error('删除失败');
+                }
+            } catch (e) {
+                ElementPlus.ElMessage.error('删除失败');
+            }
+        }
+
+        onMounted(() => {
+            fetchFiles().then(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const fileId = urlParams.get('file_id');
+                if (fileId) {
+                    selectedFileId.value = Number(fileId);
+                    fetchChunks();
+                }
+            });
+        })
+
+        return {
+            files,
+            chunks,
+            selectedFileId,
+            currentPage,
+            pageSize,
+            total,
+            fetchChunks,
+            handleSizeChange,
+            handleCurrentChange,
+            handleDelete,
+            qaNum,
+            selectedChunks,
+            chunkTable,
+            handleSelectionChange,
+            generateQA,
+            generating,
+            progress,
+            truncate,
+            toggleQA,
+            editQA,
+            saveQA,
+            deleteQA
+        }
+    }
+}).use(ElementPlus).mount('#app')
+</script>
+{% endraw %}
+{% endblock %} 

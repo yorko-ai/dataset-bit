@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% set page = 'progress' %}
+{% block head %}
+<style>
+.table-flat {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+.table-flat th, .table-flat td {
+    padding: 14px 18px;
+    text-align: left;
+    background: #fff;
+}
+.table-flat th {
+    background: #f7f8fa;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+}
+.table-flat tr {
+    transition: background 0.2s;
+}
+.table-flat tr:hover {
+    background: #f5f7fa;
+}
+.table-flat td {
+    border-bottom: 1px solid #f0f0f0;
+    color: #444;
+}
+.table-flat tr:last-child td {
+    border-bottom: none;
+}
+</style>
+{% endblock %}
+{% block content %}
+<h2>进度查看</h2>
+<table class="table-flat">
+    <thead>
+        <tr>
+            <th>文件名</th>
+            <th>状态</th>
+            <th>进度</th>
+        </tr>
+    </thead>
+    <tbody id="progressTableBody"></tbody>
+</table>
+<script>
+async function loadProgress() {
+    const resp = await fetch('/api/progress');
+    const progressList = await resp.json();
+    const tbody = document.getElementById('progressTableBody');
+    tbody.innerHTML = '';
+    progressList.forEach(p => {
+        tbody.innerHTML += `<tr>
+            <td>${p.filename}</td>
+            <td>${p.status}</td>
+            <td><progress value="${p.progress}" max="100"></progress> ${p.progress}%</td>
+        </tr>`;
+    });
+}
+loadProgress();
+setInterval(loadProgress, 5000);
+</script>
+{% endblock %} 

@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}上传文件 - Dataset-Bit{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>上传文件</h2>
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-content">
+                <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                <h4>拖放文件到这里</h4>
+                <p>或者</p>
+                <label class="btn btn-primary">
+                    选择文件
+                    <input type="file" id="fileInput" multiple style="display: none;">
+                </label>
+                <p class="mt-2 text-muted">支持的文件格式：TXT、MD、DOCX、PDF</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h3>已上传文件</h3>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>文件名</th>
+                        <th>类型</th>
+                        <th>大小</th>
+                        <th>上传时间</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="fileList">
+                    <!-- 文件列表将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.upload-area {
+    border: 2px dashed #007bff;
+    border-radius: 5px;
+    padding: 40px;
+    text-align: center;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.upload-area.dragover {
+    background-color: #e9ecef;
+    border-color: #0056b3;
+}
+
+.upload-content {
+    color: #6c757d;
+}
+
+.upload-content i {
+    color: #007bff;
+}
+
+.progress {
+    height: 5px;
+    margin-top: 10px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+
+    // 拖放事件处理
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        uploadArea.classList.add('dragover');
+    }
+
+    function unhighlight(e) {
+        uploadArea.classList.remove('dragover');
+    }
+
+    // 处理文件上传
+    uploadArea.addEventListener('drop', handleDrop, false);
+    fileInput.addEventListener('change', handleFiles, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles({ target: { files: files } });
+    }
+
+    function handleFiles(e) {
+        const files = [...e.target.files];
+        files.forEach(uploadFile);
+    }
+
+    function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // 创建进度条
+        const progressRow = document.createElement('tr');
+        progressRow.innerHTML = `
+            <td>${file.name}</td>
+            <td>${file.type || '未知'}</td>
+            <td>${formatFileSize(file.size)}</td>
+            <td>${new Date().toLocaleString()}</td>
+            <td>
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">取消</button>
+            </td>
+        `;
+        fileList.insertBefore(progressRow, fileList.firstChild);
+
+        // 上传文件
+        fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                progressRow.querySelector('.progress-bar').style.width = '100%';
+                progressRow.querySelector('.progress-bar').classList.add('bg-success');
+                setTimeout(() => {
+                    progressRow.remove();
+                    loadFileList();
+                }, 1000);
+            } else {
+                throw new Error(data.detail || '上传失败');
+            }
+        })
+        .catch(error => {
+            progressRow.querySelector('.progress-bar').classList.add('bg-danger');
+            alert(error.message);
+        });
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function loadFileList() {
+        fetch('/api/files')
+            .then(response => response.json())
+            .then(files => {
+                fileList.innerHTML = files.map(file => `
+                    <tr>
+                        <td>${file.filename}</td>
+                        <td>${file.filetype}</td>
+                        <td>-</td>
+                        <td>${new Date(file.upload_time).toLocaleString()}</td>
+                        <td>${file.status}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="processFile(${file.id})">处理</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteFile(${file.id})">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+            })
+            .catch(error => console.error('加载文件列表失败:', error));
+    }
+
+    // 初始加载文件列表
+    loadFileList();
+});
+
+// 处理文件
+function processFile(fileId) {
+    fetch(`/api/split?file_id=${fileId}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('文件处理成功！');
+            loadFileList();
+        } else {
+            throw new Error(data.detail || '处理失败');
+        }
+    })
+    .catch(error => alert(error.message));
+}
+
+// 删除文件
+function deleteFile(fileId) {
+    if (confirm('确定要删除这个文件吗？')) {
+        fetch(`/api/files/${fileId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                loadFileList();
+            } else {
+                throw new Error(data.detail || '删除失败');
+            }
+        })
+        .catch(error => alert(error.message));
+    }
+}
+</script>
+{% endblock %} 

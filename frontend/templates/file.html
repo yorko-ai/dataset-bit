@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% set page = 'file' %}
+{% block head %}
+<style>
+.table-flat {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    overflow: hidden;
+}
+.table-flat th, .table-flat td {
+    padding: 14px 18px;
+    text-align: left;
+    background: #fff;
+}
+.table-flat th {
+    background: #f7f8fa;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #f0f0f0;
+}
+.table-flat tr {
+    transition: background 0.2s;
+}
+.table-flat tr:hover {
+    background: #f5f7fa;
+}
+.table-flat td {
+    border-bottom: 1px solid #f0f0f0;
+    color: #444;
+}
+.table-flat tr:last-child td {
+    border-bottom: none;
+}
+.btn {
+    padding: 6px 16px;
+    border: none;
+    border-radius: 4px;
+    background: #409EFF;
+    color: #fff;
+    cursor: pointer;
+    margin-right: 8px;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+.btn:hover { background: #337ecc; }
+.btn-danger { background: #e74c3c; }
+.btn-danger:hover { background: #c0392b; }
+</style>
+{% endblock %}
+{% block content %}
+<h2>文件管理</h2>
+<!-- 文件上传 -->
+<form id="uploadForm" enctype="multipart/form-data" method="post" action="/api/upload" style="margin-bottom:24px;">
+    <input type="file" name="file" required>
+    <button type="submit" class="btn">上传文件</button>
+</form>
+<!-- 文件列表 -->
+<table class="table-flat">
+    <thead>
+        <tr>
+            <th>文件名</th>
+            <th>状态</th>
+            <th>上传时间</th>
+            <th style="width: 180px;">操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for f in files %}
+        <tr>
+            <td>{{ f.file_path }}</td>
+            <td>{{ f.status }}</td>
+            <td>{{ f.created_at }}</td>
+            <td style="display: flex; gap: 8px; white-space: nowrap;">
+                <button class="btn" type="button" onclick="showSplitDialog({{ f.id }})">分块</button>
+                <button class="btn" type="button" onclick="viewChunks({{ f.id }})">查看</button>
+                <button class="btn btn-danger" type="button" onclick="deleteFile({{ f.id }})">删除</button>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">暂无数据</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+<!-- 分块策略对话框 -->
+<div id="splitDialog" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.2); z-index:999; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:8px; padding:32px; min-width:340px; box-shadow:0 2px 12px 0 rgba(0,0,0,0.12);">
+    <h3>智能分块策略</h3>
+    <form id="splitForm">
+      <input type="hidden" name="file_id" id="splitFileId">
+      <label>分块方式：</label><br>
+      <label><input type="radio" name="method" value="auto" checked> 智能递归分层（推荐）</label><br>
+      <label><input type="radio" name="method" value="heading"> 按标题分块</label><br>
+      <label><input type="radio" name="method" value="paragraph"> 按段落分块</label><br>
+      <label><input type="radio" name="method" value="table"> 按表格单元分块</label><br><br>
+      <label>每个文本块的最大字符数 (100-5000)：<input type="number" name="block_size" value="1000" min="100" max="5000" style="width:100px" /></label>
+      <label style="margin-left:16px;">重叠率(%): <input type="number" name="overlap" value="15" min="0" max="50" style="width:60px" /></label><br><br>
+      <button type="submit" class="btn">开始分块</button>
+      <button type="button" class="btn btn-danger" onclick="closeSplitDialog()">取消</button>
+    </form>
+    <div id="splitProgress" style="margin-top:16px;">
+      <div id="splitProgressBar" style="height:18px; background:#f0f0f0; border-radius:8px; overflow:hidden;">
+        <div id="splitProgressInner" style="height:18px; width:0; background:#409EFF; transition:width 0.2s;"></div>
+      </div>
+      <span id="splitProgressText" style="color:#409EFF;"></span>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('uploadForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const resp = await fetch('/api/upload', {method:'POST', body:formData});
+    if (resp.ok) { alert('上传成功'); location.reload(); }
+    else { alert('上传失败'); }
+};
+let splitFileId = null, splitProgressTimer = null;
+function showSplitDialog(fileId) {
+    splitFileId = fileId;
+    document.getElementById('splitFileId').value = fileId;
+    document.getElementById('splitDialog').style.display = 'flex';
+    document.getElementById('splitProgressText').innerText = '';
+    document.getElementById('splitProgressInner').style.width = '0';
+}
+function closeSplitDialog() {
+    document.getElementById('splitDialog').style.display = 'none';
+    if (splitProgressTimer) clearInterval(splitProgressTimer);
+}
+document.getElementById('splitForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const fileId = document.getElementById('splitFileId').value;
+    const method = this.method.value;
+    const blockSize = this.block_size.value;
+    const overlap = this.overlap.value;
+    document.getElementById('splitProgressText').innerText = '分块中...';
+    document.getElementById('splitProgressInner').style.width = '0';
+    await fetch(`/api/files/${fileId}/split`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({method, block_size: blockSize, overlap: overlap})
+    });
+    // 轮询进度
+    splitProgressTimer = setInterval(async ()=>{
+        const resp = await fetch(`/api/files/${fileId}/split_progress`);
+        const data = await resp.json();
+        let percent = 0;
+        if (data.total && data.total > 0) {
+            percent = Math.floor((data.current / data.total) * 100);
+        }
+        document.getElementById('splitProgressInner').style.width = percent + '%';
+        document.getElementById('splitProgressText').innerText = `进度：${percent}%`;
+        if (data.status === 'done') {
+            document.getElementById('splitProgressText').innerText = '分块完成！';
+            clearInterval(splitProgressTimer);
+            setTimeout(()=>{ closeSplitDialog(); location.reload(); }, 1200);
+        }
+        if (data.status === 'error') {
+            document.getElementById('splitProgressText').innerText = '分块失败';
+            clearInterval(splitProgressTimer);
+        }
+    }, 500);
+};
+async function deleteFile(id) {
+    if (!confirm('确定要删除该文件吗？')) return;
+    const resp = await fetch(`/api/files/${id}/delete`, {method:'POST'});
+    if (resp.ok) { alert('删除成功'); location.reload(); }
+    else { alert('删除失败'); }
+}
+function viewChunks(fileId) {
+    window.location.href = '/chunk.html?file_id=' + fileId;
+}
+</script>
+{% endblock %} 

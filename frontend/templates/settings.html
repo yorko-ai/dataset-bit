@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% set page = 'settings' %}
+{% block head %}
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus"></script>
+<style>
+    .form-row {
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+    }
+    .form-label {
+        width: 100px;
+        min-width: 80px;
+        font-weight: bold;
+        margin-right: 12px;
+        text-align: right;
+    }
+    .form-input { 
+        width: 360px; 
+        padding: 8px; 
+        border: 1px solid #ddd; 
+        border-radius: 4px; 
+    }
+    .btns { margin-top: 32px; }
+    .input-group {
+        display: flex;
+        align-items: center;
+        position: relative;
+        width: 360px;
+    }
+    .eye-icon {
+        margin-left: -32px;
+        z-index: 2;
+        background: #fff;
+        border-radius: 4px;
+        padding: 2px 4px;
+        cursor: pointer;
+        font-size: 18px;
+        user-select: none;
+        color: #888;
+        transition: background 0.2s;
+    }
+    .eye-icon:hover { background: #f0f0f0; color: #409EFF; }
+    .btn {
+        padding: 6px 16px;
+        border: none;
+        border-radius: 4px;
+        background: #409EFF;
+        color: #fff;
+        cursor: pointer;
+        margin-right: 8px;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+    .btn:hover { background: #337ecc; }
+</style>
+{% endblock %}
+{% block content %}
+{% raw %}
+<div id="app">
+    <h2>系统设置</h2>
+    
+    <div class="form-row">
+        <label class="form-label">API 地址:</label>
+        <input v-model="api_base" class="form-input" placeholder="请输入API地址" />
+    </div>
+    
+    <div class="form-row">
+        <label class="form-label">API Key:</label>
+        <div class="input-group">
+            <input v-model="api_key" :type="showKey ? 'text' : 'password'" class="form-input" placeholder="请输入API密钥" />
+            <span class="eye-icon" @click="showKey = !showKey">
+                {{ showKey ? '👁️' : '👁️‍🗨️' }}
+            </span>
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <label class="form-label">Model 名称:</label>
+        <input v-model="model_name" class="form-input" placeholder="请输入模型名称" />
+    </div>
+    
+    <div class="btns">
+        <button class="btn" @click="testConn" :disabled="loading">测试连接</button>
+        <button class="btn" @click="save" :disabled="loading">保存设置</button>
+    </div>
+</div>
+
+<script>
+const { createApp, ref, onMounted } = Vue
+
+createApp({
+    setup() {
+        const api_base = ref('')
+        const api_key = ref('')
+        const model_name = ref('')
+        const loading = ref(false)
+        const showKey = ref(false)
+
+        const fetchSettings = async () => {
+            try {
+                const resp = await fetch('/api/settings')
+                const data = await resp.json()
+                if (data.status === 'success') {
+                    api_base.value = data.data.api_base || ''
+                    api_key.value = data.data.api_key || ''
+                    model_name.value = data.data.model_name || ''
+                }
+            } catch (error) {
+                console.error('获取设置失败:', error)
+                ElementPlus.ElMessage.error('获取设置失败')
+            }
+        }
+
+        const save = async () => {
+            loading.value = true
+            try {
+                const resp = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        api_base: api_base.value,
+                        api_key: api_key.value,
+                        model_name: model_name.value
+                    })
+                })
+                const data = await resp.json()
+                if (data.status === 'success') {
+                    ElementPlus.ElMessage.success('保存成功')
+                } else {
+                    ElementPlus.ElMessage.error(data.message || '保存失败')
+                }
+            } catch (error) {
+                console.error('保存设置失败:', error)
+                ElementPlus.ElMessage.error('保存设置失败')
+            } finally {
+                loading.value = false
+            }
+        }
+
+        const testConn = async () => {
+            loading.value = true
+            try {
+                const resp = await fetch('/api/settings/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        api_base: api_base.value,
+                        api_key: api_key.value,
+                        model_name: model_name.value
+                    })
+                })
+                const data = await resp.json()
+                if (data.status === 'success') {
+                    ElementPlus.ElMessage.success('连接成功')
+                } else {
+                    ElementPlus.ElMessage.error(data.message || '连接失败')
+                }
+            } catch (error) {
+                console.error('测试连接失败:', error)
+                ElementPlus.ElMessage.error('测试连接失败')
+            } finally {
+                loading.value = false
+            }
+        }
+
+        onMounted(() => {
+            fetchSettings()
+        })
+
+        return {
+            api_base,
+            api_key,
+            model_name,
+            loading,
+            showKey,
+            save,
+            testConn
+        }
+    }
+}).use(ElementPlus).mount('#app')
+</script>
+{% endraw %}
+{% endblock %} 

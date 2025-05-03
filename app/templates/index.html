@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - Dataset-Bit{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="jumbotron">
+            <h1 class="display-4">欢迎使用 Dataset-Bit</h1>
+            <p class="lead">一个强大的LLM微调数据集自动生成工具</p>
+            <hr class="my-4">
+            <p>通过智能分割、问答生成和质量评估，快速创建高质量的训练数据集。</p>
+            <a class="btn btn-primary btn-lg" href="/upload" role="button">开始使用</a>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">文档处理</h5>
+                <p class="card-text">支持多种文件格式，智能分割文本内容，保留文档结构。</p>
+                <ul class="list-unstyled">
+                    <li>✓ 支持 TXT、MD、DOCX、PDF</li>
+                    <li>✓ 智能段落分割</li>
+                    <li>✓ 标题识别</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">问答生成</h5>
+                <p class="card-text">自动生成多样化的问答对，支持多种问题类型和难度级别。</p>
+                <ul class="list-unstyled">
+                    <li>✓ 事实性问题</li>
+                    <li>✓ 分析性问题</li>
+                    <li>✓ 推理性问题</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">数据导出</h5>
+                <p class="card-text">支持多种导出格式，适配不同的LLM微调需求。</p>
+                <ul class="list-unstyled">
+                    <li>✓ Alpaca格式</li>
+                    <li>✓ ShareGPT格式</li>
+                    <li>✓ 自定义格式</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-12">
+        <h2>使用流程</h2>
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-number">1</div>
+                <div class="timeline-content">
+                    <h4>上传文档</h4>
+                    <p>上传需要处理的文档，支持多种格式。</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-number">2</div>
+                <div class="timeline-content">
+                    <h4>文本分割</h4>
+                    <p>选择分割方式，将文档分割成合适的片段。</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-number">3</div>
+                <div class="timeline-content">
+                    <h4>生成问答</h4>
+                    <p>为每个文本片段生成问答对。</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-number">4</div>
+                <div class="timeline-content">
+                    <h4>导出数据</h4>
+                    <p>选择导出格式，下载训练数据集。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 50px;
+    margin-bottom: 30px;
+}
+
+.timeline-number {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 40px;
+    font-weight: bold;
+}
+
+.timeline-content {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.timeline-content h4 {
+    margin-bottom: 10px;
+    color: #007bff;
+}
+</style>
+{% endblock %} 
