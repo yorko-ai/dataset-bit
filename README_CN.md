@@ -49,6 +49,14 @@ Dataset-Bit 是一个强大的开源工具，专门用于生成和优化大型�
 - 至少 4GB RAM
 - 稳定的网络连接
 
+### 数据库初始化
+本项目使用 SQLite 数据库。首次运行前请执行以下命令初始化数据库结构：
+
+```bash
+sqlite3 dataset_bit.db < init_db.sql
+```
+如无 sqlite3 命令行工具，也可通过 Python 脚本初始化，详见 `app/models/database.py`。
+
 ### 安装步骤
 
 1. **克隆仓库**

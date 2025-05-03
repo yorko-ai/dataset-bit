@@ -51,6 +51,14 @@ Dataset-Bit is a powerful open-source tool designed for generating and optimizin
 - Minimum 4GB RAM
 - Stable internet connection
 
+### Database Initialization
+This project uses SQLite. Before the first run, please initialize the database structure with:
+
+```bash
+sqlite3 dataset_bit.db < init_db.sql
+```
+If you don't have the `sqlite3` CLI tool, you can also initialize via Python script, see `app/models/database.py`.
+
 ### Installation Steps
 
 1. **Clone Repository**
