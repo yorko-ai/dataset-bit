@@ -164,3 +164,6 @@ ENV/
 # Database
 *.db
 *.sqlite3 
+
+# cursor rules
+.cursorrules
