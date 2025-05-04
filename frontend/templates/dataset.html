@@ -38,49 +38,56 @@
 </style>
 {% endblock %}
 {% block content %}
-<h2>数据导出</h2>
+<h2>{{ t['dataset_manage'] }}</h2>
 <div style="margin-bottom: 16px;">
-    <button class="btn" onclick="showExportDialog()" id="exportBtn" disabled>批量导出</button>
+    <button class="btn" type="button" onclick="showExportDialog()" id="exportBtn" disabled>{{ t['batch_export'] }}</button>
 </div>
 <table class="table-flat">
     <thead>
         <tr>
             <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
-            <th>文件名</th>
-            <th>问答对数量</th>
-            <th>创建时间</th>
+            <th>{{ t['file_name'] }}</th>
+            <th>{{ t['qa_pairs'] }}</th>
+            <th>{{ t['create_time'] }}</th>
         </tr>
     </thead>
     <tbody id="datasetTableBody"></tbody>
 </table>
 
 <!-- 导出参数弹窗 -->
-<div id="exportDialog" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.15); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#fff; border-radius:10px; padding:32px 36px; min-width:320px; box-shadow:0 2px 12px 0 rgba(0,0,0,0.12);">
-    <h3 style="margin-bottom:18px;">导出数据集</h3>
-    <div style="margin-bottom:16px;">
-      <label>导出格式：</label>
-      <select id="exportFormat">
-        <option value="alpaca">Alpaca</option>
-        <option value="sharegpt">ShareGPT</option>
-      </select>
+<div id="exportDialog" class="dialog" style="display:none;">
+    <div class="dialog-content">
+        <h3>{{ t['export_params'] }}</h3>
+        <div style="margin:20px 0;">
+            <div style="margin-bottom:12px;">
+                <label>{{ t['export_format'] }}:</label>
+                <select id="exportFormat" class="select" style="margin-left:8px;">
+                    <option value="alpaca">Alpaca</option>
+                    <option value="chatglm">ChatGLM</option>
+                </select>
+            </div>
+            <div>
+                <label>{{ t['export_type'] }}:</label>
+                <select id="exportType" class="select" style="margin-left:8px;">
+                    <option value="json">JSON</option>
+                    <option value="csv">CSV</option>
+                    <option value="md">Markdown</option>
+                </select>
+            </div>
+        </div>
+        <div style="text-align:right;">
+            <button class="btn" type="button" onclick="closeExportDialog()">{{ t['export_cancel'] }}</button>
+            <button class="btn btn-primary" type="button" id="exportConfirmBtn">{{ t['export_confirm'] }}</button>
+        </div>
     </div>
-    <div style="margin-bottom:24px;">
-      <label>文件类型：</label>
-      <select id="exportType">
-        <option value="json">JSON</option>
-        <option value="csv">CSV</option>
-        <option value="md">MD</option>
-      </select>
-    </div>
-    <div style="text-align:right;">
-      <button id="exportConfirmBtn" class="btn">确定导出</button>
-      <button onclick="closeExportDialog()" class="btn btn-danger">取消</button>
-    </div>
-  </div>
 </div>
 
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus"></script>
 <script>
+window._t = {{ t|tojson }};
+window._lang = "{{ lang }}";
+
 let selectedFiles = new Set();
 
 function toggleSelectAll() {
@@ -143,6 +150,7 @@ async function loadDatasets() {
 }
 
 async function exportDatasets(fileIds, format = 'alpaca', type = 'json') {
+    const t = window._t;
     const resp = await fetch(`/api/datasets_export?ids=${fileIds.join(',')}&format=${format}&type=${type}`, {method:'GET'});
     if (resp.ok) {
         const blob = await resp.blob();
@@ -155,8 +163,9 @@ async function exportDatasets(fileIds, format = 'alpaca', type = 'json') {
         a.download = `dataset_export_${format}.${ext}`;
         a.click();
         window.URL.revokeObjectURL(url);
+        ElementPlus.ElMessage.success(t['export_success']);
     } else {
-        alert('导出失败');
+        ElementPlus.ElMessage.error(t['export_fail']);
     }
 }
 

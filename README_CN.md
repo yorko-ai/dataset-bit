@@ -93,15 +93,10 @@ cp .env.example .env
 ```bash
 # 启动后端服务
 python -m app.main
-
-# 新开一个终端，启动前端服务
-cd frontend
-npm install
-npm run dev
 ```
 
 5. **访问应用**
-- 前端界面：http://localhost:5173
+- 前端界面：http://localhost:8000
 - API 文档：http://localhost:8000/docs
 - 健康检查：http://localhost:8000/health
 
@@ -246,4 +241,28 @@ dataset-bit/
 
 <div align="center">
   <sub>Built with ❤️ by <a href="https://github.com/yorkoliu">York Liu</a></sub>
-</div> 
+</div>
+
+## 系统界面预览
+
+### 1. 数据集管理界面
+![数据集管理界面](frontend/static/dataset.png)
+
+> 用于上传、管理和分块多种格式的数据文件，支持多语言切换和批量操作。
+
+### 2. 数据集导出界面
+![数据集导出界面](frontend/static/export.png)
+
+> 支持多种格式（如Alpaca、ChatGLM等）导出问答对数据，参数灵活可选，界面风格统一。
+
+### 3. Alpaca数据集示例
+![Alpaca数据集](frontend/static/alpaca.png)
+
+> 展示Alpaca格式数据的问答对内容，支持分页、批量操作和多语言切换。
+
+---
+
+## 其它说明
+- 所有界面均支持深色/浅色主题切换，UI风格高度统一。
+- 支持多语言（中英文）一键切换，所有提示、按钮、表头等均多语言化。
+- 详见下方功能说明与使用方法。 

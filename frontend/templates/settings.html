@@ -4,112 +4,197 @@
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script src="https://unpkg.com/element-plus"></script>
 <style>
-    .form-row {
-        margin-bottom: 24px;
-        display: flex;
-        align-items: center;
+    .settings-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
     }
-    .form-label {
-        width: 100px;
-        min-width: 80px;
-        font-weight: bold;
-        margin-right: 12px;
-        text-align: right;
-    }
-    .form-input { 
-        width: 360px; 
-        padding: 8px; 
-        border: 1px solid #ddd; 
-        border-radius: 4px; 
-    }
-    .btns { margin-top: 32px; }
-    .input-group {
-        display: flex;
-        align-items: center;
-        position: relative;
-        width: 360px;
-    }
-    .eye-icon {
-        margin-left: -32px;
-        z-index: 2;
+    .settings-group {
         background: #fff;
-        border-radius: 4px;
-        padding: 2px 4px;
-        cursor: pointer;
-        font-size: 18px;
-        user-select: none;
-        color: #888;
-        transition: background 0.2s;
+        border-radius: 10px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
-    .eye-icon:hover { background: #f0f0f0; color: #409EFF; }
-    .btn {
-        padding: 6px 16px;
-        border: none;
+    .settings-group h3 {
+        margin: 0 0 20px 0;
+        color: #333;
+    }
+    .settings-item {
+        margin-bottom: 16px;
+    }
+    .settings-item label {
+        display: block;
+        margin-bottom: 8px;
+        color: #666;
+    }
+    .settings-item input, .settings-item select {
+        width: 100%;
+        max-width: 400px;
+        padding: 8px;
+        border: 1px solid #ddd;
         border-radius: 4px;
+    }
+    .btn-save {
         background: #409EFF;
         color: #fff;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 4px;
         cursor: pointer;
-        margin-right: 8px;
         font-size: 14px;
         transition: background 0.2s;
     }
-    .btn:hover { background: #337ecc; }
+    .btn-save:hover {
+        background: #337ecc;
+    }
+    .btn-test {
+        background: #67C23A;
+        color: #fff;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+        margin-left: 12px;
+    }
+    .btn-test:hover {
+        background: #529b2e;
+    }
+    .error-tip { color: #e74c3c; margin: 20px 0; text-align: center; }
+    .loading-tip { color: #409EFF; margin: 20px 0; text-align: center; }
+    /* 主题样式 */
+    .theme-dark {
+        background: #181818 !important;
+        color: #e0e0e0 !important;
+    }
+    .theme-dark .card, .theme-dark .settings-group {
+        background: #23272f !important;
+        color: #e0e0e0 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+    }
+    .theme-dark input, .theme-dark select {
+        background: #23272f !important;
+        color: #e0e0e0 !important;
+        border-color: #444 !important;
+    }
+    .theme-dark .btn, .theme-dark .btn-save, .theme-dark .btn-test {
+        background: #1976d2 !important;
+        color: #fff !important;
+    }
+    .theme-dark .btn:hover, .theme-dark .btn-save:hover, .theme-dark .btn-test:hover {
+        background: #1251a3 !important;
+    }
+    .theme-light {
+        background: #f5f7fa !important;
+        color: #222 !important;
+    }
+    .theme-light .card, .theme-light .settings-group {
+        background: #fff !important;
+        color: #222 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+    }
+    .theme-light input, .theme-light select {
+        background: #fff !important;
+        color: #222 !important;
+        border-color: #ddd !important;
+    }
 </style>
 {% endblock %}
+
 {% block content %}
+<script>
+window._t = {{ t|tojson }};
+window._lang = "{{ lang }}";
+</script>
 {% raw %}
 <div id="app">
-    <h2>系统设置</h2>
-    
-    <div class="form-row">
-        <label class="form-label">API 地址:</label>
-        <input v-model="api_base" class="form-input" placeholder="请输入API地址" />
-    </div>
-    
-    <div class="form-row">
-        <label class="form-label">API Key:</label>
-        <div class="input-group">
-            <input v-model="api_key" :type="showKey ? 'text' : 'password'" class="form-input" placeholder="请输入API密钥" />
-            <span class="eye-icon" @click="showKey = !showKey">
-                {{ showKey ? '👁️' : '👁️‍🗨️' }}
-            </span>
+    <h2 v-text="t['settings_manage']"></h2>
+    <div v-if="error" class="error-tip">{{ error }}</div>
+    <div v-else>
+        <div v-if="loading" class="loading-tip">{{ t['loading'] }}</div>
+        <div v-else>
+            <div class="settings-container">
+                <div class="settings-group">
+                    <h3>{{ t['api_settings'] }}</h3>
+                    <div class="settings-item">
+                        <label>{{ t['api_base'] }}:</label>
+                        <input type="text" v-model="api_base" :placeholder="t['api_base_placeholder']">
+                    </div>
+                    <div class="settings-item">
+                        <label>{{ t['api_key'] }}:</label>
+                        <div style="display:flex;align-items:center;">
+                            <input :type="showKey ? 'text' : 'password'" v-model="api_key" :placeholder="t['api_key_placeholder']">
+                            <span @click="showKey = !showKey" style="margin-left:8px;cursor:pointer;">
+                                <el-icon><View v-if="showKey"/><Hide v-else/></el-icon>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="settings-item">
+                        <label>{{ t['model_name'] }}:</label>
+                        <input type="text" v-model="model_name" :placeholder="t['model_name_placeholder']">
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h3>{{ t['interface_settings'] }}</h3>
+                    <div class="settings-item">
+                        <label>{{ t['language'] }}:</label>
+                        <select v-model="language" class="select">
+                            <option value="zh">{{ t['language'] == '语言' ? '简体中文' : 'Chinese' }}</option>
+                            <option value="en">{{ t['language'] == '语言' ? 'English' : '英文' }}</option>
+                        </select>
+                    </div>
+                    <div class="settings-item">
+                        <label>{{ t['theme'] }}:</label>
+                        <select v-model="theme" class="select">
+                            <option value="light">{{ t['theme_light'] }}</option>
+                            <option value="dark">{{ t['theme_dark'] }}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:32px;text-align:center;">
+                <button class="btn-save" type="button" @click="save" :disabled="loading">{{ t['save'] }}</button>
+                <button class="btn-test" type="button" @click="testConn" :disabled="loading">{{ t['test_connection'] }}</button>
+            </div>
         </div>
-    </div>
-    
-    <div class="form-row">
-        <label class="form-label">Model 名称:</label>
-        <input v-model="model_name" class="form-input" placeholder="请输入模型名称" />
-    </div>
-    
-    <div class="btns">
-        <button class="btn" @click="testConn" :disabled="loading">测试连接</button>
-        <button class="btn" @click="save" :disabled="loading">保存设置</button>
     </div>
 </div>
 
 <script>
-const { createApp, ref, onMounted } = Vue
+const { createApp, ref, onMounted, watch } = Vue
 
 createApp({
     setup() {
+        const t = window._t;
         const api_base = ref('')
         const api_key = ref('')
         const model_name = ref('')
-        const loading = ref(false)
+        const language = ref('zh')
+        const theme = ref('light')
+        const loading = ref(true)
+        const error = ref("")
         const showKey = ref(false)
 
         const fetchSettings = async () => {
+            loading.value = true;
+            error.value = "";
             try {
                 const resp = await fetch('/api/settings')
+                if (!resp.ok) throw new Error(t['fetch_settings_fail'] || 'Failed to fetch settings');
                 const data = await resp.json()
                 if (data.status === 'success') {
                     api_base.value = data.data.api_base || ''
                     api_key.value = data.data.api_key || ''
                     model_name.value = data.data.model_name || ''
+                    language.value = data.data.language || 'zh'
+                    theme.value = data.data.theme || 'light'
                 }
-            } catch (error) {
-                console.error('获取设置失败:', error)
-                ElementPlus.ElMessage.error('获取设置失败')
+            } catch (err) {
+                error.value = t['fetch_settings_fail'] || (err.message || '加载设置失败');
+            } finally {
+                loading.value = false;
             }
         }
 
@@ -122,25 +207,28 @@ createApp({
                     body: JSON.stringify({
                         api_base: api_base.value,
                         api_key: api_key.value,
-                        model_name: model_name.value
+                        model_name: model_name.value,
+                        language: language.value,
+                        theme: theme.value
                     })
                 })
                 const data = await resp.json()
                 if (data.status === 'success') {
-                    ElementPlus.ElMessage.success('保存成功')
+                    document.cookie = "lang=" + language.value + "; path=/";
+                    let url = window.location.pathname + window.location.hash;
+                    window.location.href = url;
                 } else {
-                    ElementPlus.ElMessage.error(data.message || '保存失败')
+                    ElementPlus.ElMessageBox.alert(data.message || t['save_fail'], t['alert_title'], {type:'error'});
                 }
             } catch (error) {
-                console.error('保存设置失败:', error)
-                ElementPlus.ElMessage.error('保存设置失败')
+                ElementPlus.ElMessageBox.alert(t['save_fail'], t['alert_title'], {type:'error'});
             } finally {
                 loading.value = false
             }
         }
 
         const testConn = async () => {
-            loading.value = true
+            ElementPlus.ElMessage.info(t['testing'] || '正在连接...');
             try {
                 const resp = await fetch('/api/settings/test', {
                     method: 'POST',
@@ -153,27 +241,45 @@ createApp({
                 })
                 const data = await resp.json()
                 if (data.status === 'success') {
-                    ElementPlus.ElMessage.success('连接成功')
+                    ElementPlus.ElMessageBox.alert(t['test_success'], t['alert_title'], {type:'success'});
                 } else {
-                    ElementPlus.ElMessage.error(data.message || '连接失败')
+                    ElementPlus.ElMessageBox.alert(data.message || t['test_fail'], t['alert_title'], {type:'error'});
                 }
             } catch (error) {
-                console.error('测试连接失败:', error)
-                ElementPlus.ElMessage.error('测试连接失败')
-            } finally {
-                loading.value = false
+                ElementPlus.ElMessageBox.alert(t['test_fail'], t['alert_title'], {type:'error'});
             }
         }
 
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                document.body.classList.add('theme-dark');
+                document.body.classList.remove('theme-light');
+            } else {
+                document.body.classList.add('theme-light');
+                document.body.classList.remove('theme-dark');
+            }
+        }
+
+        watch(theme, (newTheme) => {
+            document.cookie = "theme=" + newTheme + "; path=/";
+            applyTheme(newTheme);
+        });
+
         onMounted(() => {
-            fetchSettings()
+            fetchSettings().then(() => {
+                applyTheme(theme.value);
+            });
         })
 
         return {
+            t,
             api_base,
             api_key,
             model_name,
+            language,
+            theme,
             loading,
+            error,
             showKey,
             save,
             testConn

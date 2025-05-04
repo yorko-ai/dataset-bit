@@ -3,31 +3,481 @@
 <head>
     <meta charset="UTF-8">
     <title>Dataset-Bit</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
     <style>
         body { margin:0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; background: #f5f7fa;}
-        .top-menu { background: #fff; border-bottom:1px solid #e5e6eb; height: 56px; display: flex; align-items: center; padding: 0 40px; }
-        .top-menu .logo { font-weight: bold; color: #409EFF; font-size: 22px; margin-right: 40px; }
+        .top-menu { height: 56px; display: flex; align-items: center; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+        .top-menu .logo { margin-right: 40px; }
         .top-menu a { color: #333; margin-right: 32px; text-decoration: none; font-size: 16px; line-height: 56px; padding: 0 8px; border-radius: 4px; transition: background .2s;}
         .top-menu a.active, .top-menu a:hover { background: #ecf5ff; color: #409EFF; }
         .main-content { padding: 40px 0; max-width: 1200px; margin: 0 auto; }
         h2 { font-size: 1.5rem; font-weight: bold; margin-bottom: 24px; }
         .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.06); padding: 32px 36px 36px 36px; }
+        .tech-logo {
+          font-family: 'Segoe UI', 'Arial', sans-serif;
+          font-weight: bold;
+          font-size: 26px;
+          letter-spacing: 1px;
+          background: linear-gradient(90deg, #409EFF 30%, #00eaff 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          position: relative;
+          text-shadow: 0 2px 8px rgba(64,158,255,0.15), 0 1px 0 #fff, 0 0 8px #00eaff44;
+          display: inline-block;
+        }
+        .logo-main {
+          font-weight: 900;
+          letter-spacing: 2px;
+        }
+        .logo-dot {
+          color: #00eaff;
+          font-size: 1.1em;
+          font-weight: 900;
+          margin: 0 2px;
+          text-shadow: 0 0 8px #00eaff99;
+        }
+        .logo-sub {
+          font-weight: 700;
+          color: #fff;
+          text-shadow: 0 0 8px #409EFF99, 0 1px 0 #00eaff;
+          letter-spacing: 1px;
+        }
+        .lang-select {
+          height: 32px;
+          border-radius: 4px;
+          border: 1px solid #e5e6eb;
+          font-size: 15px;
+          padding: 2px 8px;
+          background: #fff;
+          margin-left: auto;
+        }
+        button.btn, input[type=button].btn, input[type=submit].btn {
+          background: #409EFF;
+          color: #fff;
+          border: none;
+          border-radius: 4px;
+          padding: 6px 16px;
+          font-size: 14px;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        button.btn:hover, input[type=button].btn:hover, input[type=submit].btn:hover {
+          background: #337ecc;
+        }
+        .btn-primary {
+          background: #1976d2;
+          color: #fff;
+          border: none;
+        }
+        .btn-primary:hover {
+          background: #1251a3;
+        }
+        .select {
+          height: 32px;
+          border-radius: 4px;
+          border: 1px solid #e5e6eb;
+          font-size: 15px;
+          padding: 2px 8px;
+          background: #fff;
+        }
+        /* 主题样式 */
+        .theme-dark {
+            background: #181818 !important;
+            color: #e0e0e0 !important;
+        }
+        .theme-dark .card, .theme-dark .settings-group {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+        }
+        .theme-dark input, .theme-dark select {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        .theme-dark .btn, .theme-dark .btn-save, .theme-dark .btn-test {
+            background: #1976d2 !important;
+            color: #fff !important;
+        }
+        .theme-dark .btn:hover, .theme-dark .btn-save:hover, .theme-dark .btn-test:hover {
+            background: #1251a3 !important;
+        }
+        .theme-light {
+            background: #f5f7fa !important;
+            color: #222 !important;
+        }
+        .theme-light .card, .theme-light .settings-group {
+            background: #fff !important;
+            color: #222 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+        }
+        .theme-light input, .theme-light select {
+            background: #fff !important;
+            color: #222 !important;
+            border-color: #ddd !important;
+        }
+        /* 顶部菜单适配 */
+        .theme-dark .top-menu {
+            background: #23272f !important;
+            border-bottom: 1px solid #333 !important;
+        }
+        .theme-dark .top-menu a, .theme-dark .top-menu .logo {
+            color: #e0e0e0 !important;
+        }
+        .theme-dark .top-menu a.active, .theme-dark .top-menu a:hover {
+            background: #2d323c !important;
+            color: #00eaff !important;
+        }
+        .theme-dark .lang-select {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        /* 表格适配 */
+        .theme-dark table, .theme-dark th, .theme-dark td {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        .theme-dark th {
+            background: #23272f !important;
+            color: #00eaff !important;
+        }
+        .theme-dark tr:hover {
+            background: #2d323c !important;
+        }
+        /* 分页控件适配 */
+        .theme-dark .pagination, .theme-dark .el-pagination {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+        }
+        .theme-dark .pagination .active, .theme-dark .el-pagination .active {
+            background: #1976d2 !important;
+            color: #fff !important;
+        }
+        /* Element Plus 弹窗/提示框适配 */
+        .theme-dark .el-message-box, .theme-dark .el-message {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        .theme-dark .el-message-box__title {
+            color: #00eaff !important;
+        }
+        .theme-dark .el-message-box__btns .el-button--primary {
+            background: #1976d2 !important;
+            color: #fff !important;
+        }
+        /* 上传区、操作栏等辅助区域 */
+        .theme-dark .upload-area, .theme-dark .action-bar {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        /* 全局背景适配 */
+        body.theme-dark, .theme-dark body {
+            background: #181818 !important;
+        }
+        .theme-dark .main-content {
+            background: #181818 !important;
+        }
+        .theme-dark .card, .theme-dark .el-container {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+        }
+        /* 输入框/下拉框/搜索框适配 */
+        .theme-dark input, .theme-dark select, .theme-dark textarea,
+        .theme-dark .el-input__inner, .theme-dark .el-select-dropdown,
+        .theme-dark .el-input-group__prepend, .theme-dark .el-input-group__append {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        .theme-dark input::placeholder, .theme-dark textarea::placeholder,
+        .theme-dark .el-input__inner::placeholder {
+            color: #888 !important;
+        }
+        /* 表格/分页/操作栏适配 */
+        .theme-dark table, .theme-dark th, .theme-dark td,
+        .theme-dark .el-table, .theme-dark .el-table__header, .theme-dark .el-table__body {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        .theme-dark th, .theme-dark .el-table__header th {
+            background: #23272f !important;
+            color: #00eaff !important;
+        }
+        .theme-dark tr:hover, .theme-dark .el-table__row:hover {
+            background: #2d323c !important;
+        }
+        .theme-dark .pagination, .theme-dark .el-pagination {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+        }
+        .theme-dark .pagination .active, .theme-dark .el-pagination .active {
+            background: #1976d2 !important;
+            color: #fff !important;
+        }
+        /* 弹窗/对话框适配 */
+        .theme-dark .el-message-box, .theme-dark .el-dialog, .theme-dark .el-message,
+        .theme-dark .el-overlay, .theme-dark .el-dialog__body, .theme-dark .el-dialog__footer {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        .theme-dark .el-message-box__title, .theme-dark .el-dialog__title {
+            color: #00eaff !important;
+        }
+        .theme-dark .el-message-box__btns .el-button--primary,
+        .theme-dark .el-dialog__footer .el-button--primary {
+            background: #1976d2 !important;
+            color: #fff !important;
+        }
+        /* 上传区、操作栏等辅助区域 */
+        .theme-dark .upload-area, .theme-dark .action-bar {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        /* 顶部全宽背景适配 */
+        .theme-dark .top-bg, .theme-dark .top-bg {
+            background: #23272f !important;
+            border-bottom: 1px solid #333 !important;
+        }
+        .theme-light .top-bg, .top-bg {
+            background: #fff !important;
+            border-bottom: 1px solid #e5e6eb !important;
+        }
+        /* 分块弹窗窗口深色适配（Element Plus） */
+        body.theme-dark .el-overlay,
+        body.theme-dark .el-dialog,
+        body.theme-dark .el-dialog__body,
+        body.theme-dark .el-dialog__footer,
+        body.theme-dark .el-message-box,
+        body.theme-dark .el-message-box__content,
+        body.theme-dark .el-message-box__btns,
+        body.theme-dark .el-message,
+        body.theme-dark .el-input__inner,
+        body.theme-dark .el-radio,
+        body.theme-dark .el-radio__label {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        body.theme-dark .el-dialog__title,
+        body.theme-dark .el-message-box__title {
+            color: #00eaff !important;
+        }
+        body.theme-dark .el-button--primary {
+            background: #1976d2 !important;
+            color: #fff !important;
+        }
+        body.theme-dark .el-button--default {
+            background: #2d323c !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        body.theme-dark .el-input__inner::placeholder {
+            color: #888 !important;
+        }
+        /* 只对 el-select 输入框内容区设置样式，避免重叠 */
+        body.theme-dark .el-select .el-input__inner {
+            height: 32px !important;
+            border-radius: 4px !important;
+            border: 1px solid #e5e6eb !important;
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            font-size: 15px !important;
+            padding: 2px 32px 2px 8px !important; /* 右侧留出空间给箭头 */
+            box-sizing: border-box !important;
+            box-shadow: none !important;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+        body.theme-dark .el-select .el-input__inner:focus,
+        body.theme-dark .el-select .el-input__inner:hover {
+            border: 1.5px solid #409EFF !important;
+            box-shadow: 0 0 0 2px #409eff33 !important;
+        }
+        /* 恢复 el-input__wrapper 默认布局，避免重叠 */
+        body.theme-dark .el-select .el-input__wrapper {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            min-height: unset !important;
+        }
+        /* 优化下拉箭头区域，防止重叠 */
+        body.theme-dark .el-select .el-input__suffix,
+        body.theme-dark .el-select .el-input__suffix-inner,
+        body.theme-dark .el-select .el-select__caret {
+            color: #e0e0e0 !important;
+            font-size: 18px !important;
+            right: 8px !important;
+            background: none !important;
+            margin-right: 0 !important;
+            width: 24px !important;
+            height: 32px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            pointer-events: none;
+        }
+        /* 保证 el-select 整体圆角、边框与 .lang-select 一致 */
+        body.theme-dark .el-select {
+            border-radius: 4px !important;
+            border: none !important;
+            background: none !important;
+        }
+        /* 让分页下拉和文件选择下拉都加上.select类（如未加请在模板中加class="select"） */
+        body.theme-dark .select {
+            height: 32px !important;
+            border-radius: 4px !important;
+            border: 1px solid #e5e6eb !important;
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            font-size: 15px !important;
+            padding: 2px 8px !important;
+            box-sizing: border-box !important;
+        }
+        body.theme-dark .select:focus,
+        body.theme-dark .select:hover {
+            border: 1.5px solid #409EFF !important;
+            box-shadow: 0 0 0 2px #409eff33 !important;
+        }
+        /* 问答对弹窗/卡片区域主题适配 */
+        body.theme-dark .qa-card, body.theme-dark .qa-modal, body.theme-dark .qa-popup {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-radius: 10px !important;
+            border: 1px solid #444 !important;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.7) !important;
+        }
+        body.theme-dark .qa-card .qa-question, body.theme-dark .qa-modal .qa-question {
+            color: #00eaff !important;
+        }
+        body.theme-dark .qa-card .qa-answer, body.theme-dark .qa-modal .qa-answer {
+            color: #e0e0e0 !important;
+        }
+        body.theme-dark .qa-card a, body.theme-dark .qa-modal a {
+            color: #409EFF !important;
+        }
+        /* 问答对展开区域主题适配 */
+        body.theme-dark .qa-theme {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border-radius: 8px !important;
+            border: 1px solid #444 !important;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.7) !important;
+        }
+        body.theme-dark .qa-theme input {
+            background: #23272f !important;
+            color: #e0e0e0 !important;
+            border: 1px solid #444 !important;
+        }
+        body.theme-dark .qa-theme span,
+        body.theme-dark .qa-theme div {
+            color: #e0e0e0 !important;
+        }
+        body.theme-dark .qa-theme .qa-question {
+            color: #00eaff !important;
+        }
+        body.theme-dark .qa-theme a {
+            color: #409EFF !important;
+        }
     </style>
     {% block head %}{% endblock %}
 </head>
 <body>
-    <div class="top-menu">
-        <span class="logo">Dataset-Bit</span>
-        <a href="/file.html" class="{% if page == 'file' %}active{% endif %}">📁 文件管理</a>
-        <a href="/chunk.html" class="{% if page == 'chunk' %}active{% endif %}">🧩 分块管理</a>
-        <a href="/dataset.html" class="{% if page == 'dataset' %}active{% endif %}">📊 数据导出</a>
-        <a href="/settings.html" class="{% if page == 'settings' %}active{% endif %}">⚙️ 系统设置</a>
+    <script>
+    // 全局主题切换逻辑
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    function applyTheme(theme) {
+        document.body.classList.remove('theme-dark', 'theme-light');
+        if (theme === 'dark') {
+            document.body.classList.add('theme-dark');
+        } else {
+            document.body.classList.add('theme-light');
+        }
+    }
+    // 页面加载时自动应用主题
+    (function() {
+        let theme = getCookie('theme') || 'light';
+        applyTheme(theme);
+    })();
+    </script>
+    <div class="top-bg">
+      <div class="top-menu">
+        <span class="logo-svg" style="margin-right:40px;">
+          <svg width="150" height="36" viewBox="0 0 150 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+            <defs>
+              <linearGradient id="bit-blue" x1="0" y1="0" x2="150" y2="0" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#1976d2"/>
+                <stop offset="1" stop-color="#00eaff"/>
+              </linearGradient>
+              <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#00eaff" flood-opacity="0.25"/>
+              </filter>
+            </defs>
+            <text x="0" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="bold" fill="url(#bit-blue)" filter="url(#shadow)">Dataset</text>
+            <text x="98" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="bold" fill="#00eaff" filter="url(#shadow)">-</text>
+            <text x="110" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="bold" fill="#00eaff" filter="url(#shadow)">Bit</text>
+          </svg>
+        </span>
+        <a href="/file.html?lang={{ lang }}" class="{% if page == 'file' %}active{% endif %}">
+          <svg width="20" height="20" viewBox="0 0 20 20" style="vertical-align:middle;margin-right:4px;" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="5" width="14" height="12" rx="2" stroke="{% if page == 'file' %}#409EFF{% else %}#bbb{% endif %}" stroke-width="2" fill="none"/>
+            <rect x="7" y="2" width="6" height="4" rx="1" stroke="{% if page == 'file' %}#409EFF{% else %}#bbb{% endif %}" stroke-width="2" fill="none"/>
+          </svg>
+          {{ t['menu_file'] }}
+        </a>
+        <a href="/chunk.html?lang={{ lang }}" class="{% if page == 'chunk' %}active{% endif %}">
+          <svg width="20" height="20" viewBox="0 0 20 20" style="vertical-align:middle;margin-right:4px;" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="7" height="7" rx="2" stroke="{% if page == 'chunk' %}#409EFF{% else %}#bbb{% endif %}" stroke-width="2" fill="none"/>
+            <rect x="11" y="2" width="7" height="7" rx="2" stroke="{% if page == 'chunk' %}#409EFF{% else %}#bbb{% endif %}" stroke-width="2" fill="none"/>
+            <rect x="2" y="11" width="7" height="7" rx="2" stroke="{% if page == 'chunk' %}#409EFF{% else %}#bbb{% endif %}" stroke-width="2" fill="none"/>
+            <rect x="11" y="11" width="7" height="7" rx="2" stroke="{% if page == 'chunk' %}#409EFF{% else %}#bbb{% endif %}" stroke-width="2" fill="none"/>
+          </svg>
+          {{ t['menu_chunk'] }}
+        </a>
+        <a href="/dataset.html?lang={{ lang }}" class="{% if page == 'dataset' %}active{% endif %}">
+          <svg width="20" height="20" viewBox="0 0 20 20" style="vertical-align:middle;margin-right:4px;" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="13" width="2.5" height="4" rx="1" fill="{% if page == 'dataset' %}#409EFF{% else %}#bbb{% endif %}"/>
+            <rect x="8.25" y="9" width="2.5" height="8" rx="1" fill="{% if page == 'dataset' %}#409EFF{% else %}#bbb{% endif %}"/>
+            <rect x="13.5" y="5" width="2.5" height="12" rx="1" fill="{% if page == 'dataset' %}#409EFF{% else %}#bbb{% endif %}"/>
+          </svg>
+          {{ t['menu_dataset'] }}
+        </a>
+        <a href="/settings.html?lang={{ lang }}" class="{% if page == 'settings' %}active{% endif %}">
+          <svg width="20" height="20" viewBox="0 0 20 20" style="vertical-align:middle;margin-right:4px;" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="10" cy="10" r="7" stroke="{% if page == 'settings' %}#409EFF{% else %}#bbb{% endif %}" stroke-width="2" fill="none"/>
+            <circle cx="10" cy="10" r="2.5" fill="{% if page == 'settings' %}#409EFF{% else %}#bbb{% endif %}"/>
+            <path d="M10 3V0M10 20v-3M3 10H0M20 10h-3M15.66 4.34l2.12-2.12M2.22 17.78l2.12-2.12M15.66 15.66l2.12 2.12M2.22 2.22l2.12 2.12" stroke="{% if page == 'settings' %}#409EFF{% else %}#bbb{% endif %}" stroke-width="1.2"/>
+          </svg>
+          {{ t['menu_settings'] }}
+        </a>
+        <select class="lang-select" onchange="setLangCookie(this.value)">
+            <option value="zh" {% if lang == 'zh' %}selected{% endif %}>简体中文</option>
+            <option value="en" {% if lang == 'en' %}selected{% endif %}>English</option>
+        </select>
+      </div>
     </div>
     <div class="main-content">
         <div class="card">
             {% block content %}{% endblock %}
         </div>
     </div>
+    <script>
+    function setLangCookie(lang) {
+        document.cookie = "lang=" + lang + "; path=/";
+        let url = window.location.pathname + window.location.hash;
+        window.location.href = url;
+    }
+    </script>
 </body>
 </html> 

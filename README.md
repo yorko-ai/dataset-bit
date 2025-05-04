@@ -95,15 +95,10 @@ cp .env.example .env
 ```bash
 # Start backend service
 python -m app.main
-
-# Open a new terminal, start frontend service
-cd frontend
-npm install
-npm run dev
 ```
 
 5. **Access Application**
-- Frontend Interface: http://localhost:5173
+- Frontend Interface: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
 - Health Check: http://localhost:8000/health
 
@@ -248,4 +243,28 @@ Thanks to all developers who have contributed to this project!
 
 <div align="center">
   <sub>Built with ❤️ by <a href="https://github.com/yorkoliu">York Liu</a></sub>
-</div> 
+</div>
+
+## System Screenshots
+
+### 1. Dataset Management Interface
+![Dataset Management](frontend/static/dataset.png)
+
+> Used for uploading, managing, and chunking various data files. Supports multi-language switching and batch operations.
+
+### 2. Dataset Export Interface
+![Dataset Export](frontend/static/export.png)
+
+> Supports exporting QA pairs in multiple formats (such as Alpaca, ChatGLM, etc.), flexible parameter selection, and unified UI style.
+
+### 3. Alpaca Dataset Example
+![Alpaca Dataset](frontend/static/alpaca.png)
+
+> Shows QA pairs in Alpaca format, with pagination, batch operations, and multi-language switching.
+
+---
+
+## Additional Notes
+- All interfaces support dark/light theme switching, with highly unified UI style.
+- Supports one-click switching between Chinese and English, all prompts, buttons, and table headers are fully internationalized.
+- See below for detailed feature descriptions and usage instructions. 

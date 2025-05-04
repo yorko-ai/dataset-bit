@@ -52,54 +52,54 @@
 </style>
 {% endblock %}
 {% block content %}
-<h2>文件管理</h2>
+<h2>{{ t['file_manage'] }}</h2>
 <!-- 文件上传 -->
 <form id="uploadForm" enctype="multipart/form-data" method="post" action="/api/upload" style="margin-bottom:24px;">
     <input type="file" name="file" required>
-    <button type="submit" class="btn">上传文件</button>
+    <button type="submit" class="btn">{{ t['upload'] }}</button>
 </form>
 <!-- 文件列表 -->
 <table class="table-flat">
     <thead>
         <tr>
-            <th>文件名</th>
-            <th>状态</th>
-            <th>上传时间</th>
-            <th style="width: 180px;">操作</th>
+            <th>{{ t['filename'] }}</th>
+            <th>{{ t['status'] }}</th>
+            <th>{{ t['upload_time'] }}</th>
+            <th style="width: 180px;">{{ t['action'] }}</th>
         </tr>
     </thead>
     <tbody>
         {% for f in files %}
         <tr>
             <td>{{ f.file_path }}</td>
-            <td>{{ f.status }}</td>
+            <td>{{ f.status_translated }}</td>
             <td>{{ f.created_at }}</td>
             <td style="display: flex; gap: 8px; white-space: nowrap;">
-                <button class="btn" type="button" onclick="showSplitDialog({{ f.id }})">分块</button>
-                <button class="btn" type="button" onclick="viewChunks({{ f.id }})">查看</button>
-                <button class="btn btn-danger" type="button" onclick="deleteFile({{ f.id }})">删除</button>
+                <button class="btn" type="button" onclick="showSplitDialog('{{ f.id }}')">{{ t['split'] }}</button>
+                <button class="btn" type="button" onclick="viewChunks('{{ f.id }}')">{{ t['view'] }}</button>
+                <button class="btn btn-danger" type="button" onclick="deleteFile('{{ f.id }}')">{{ t['delete'] }}</button>
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="4">暂无数据</td></tr>
+        <tr><td colspan="4">{{ t['no_data'] }}</td></tr>
         {% endfor %}
     </tbody>
 </table>
 <!-- 分块策略对话框 -->
 <div id="splitDialog" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.2); z-index:999; align-items:center; justify-content:center;">
   <div style="background:#fff; border-radius:8px; padding:32px; min-width:340px; box-shadow:0 2px 12px 0 rgba(0,0,0,0.12);">
-    <h3>智能分块策略</h3>
+    <h3 id="dlg_split_title">{{ t['split_strategy_title'] }}</h3>
     <form id="splitForm">
       <input type="hidden" name="file_id" id="splitFileId">
-      <label>分块方式：</label><br>
-      <label><input type="radio" name="method" value="auto" checked> 智能递归分层（推荐）</label><br>
-      <label><input type="radio" name="method" value="heading"> 按标题分块</label><br>
-      <label><input type="radio" name="method" value="paragraph"> 按段落分块</label><br>
-      <label><input type="radio" name="method" value="table"> 按表格单元分块</label><br><br>
-      <label>每个文本块的最大字符数 (100-5000)：<input type="number" name="block_size" value="1000" min="100" max="5000" style="width:100px" /></label>
-      <label style="margin-left:16px;">重叠率(%): <input type="number" name="overlap" value="15" min="0" max="50" style="width:60px" /></label><br><br>
-      <button type="submit" class="btn">开始分块</button>
-      <button type="button" class="btn btn-danger" onclick="closeSplitDialog()">取消</button>
+      <label id="lbl_split_method">{{ t['split_method'] }}</label><br>
+      <label><input type="radio" name="method" value="auto" checked> <span id="lbl_method_auto">{{ t['split_method_auto'] }}</span></label><br>
+      <label><input type="radio" name="method" value="heading"> <span id="lbl_method_heading">{{ t['split_method_heading'] }}</span></label><br>
+      <label><input type="radio" name="method" value="paragraph"> <span id="lbl_method_paragraph">{{ t['split_method_paragraph'] }}</span></label><br>
+      <label><input type="radio" name="method" value="table"> <span id="lbl_method_table">{{ t['split_method_table'] }}</span></label><br><br>
+      <label id="lbl_block_size">{{ t['block_size'] }}<input type="number" name="block_size" value="1000" min="100" max="5000" style="width:100px" /></label>
+      <label id="lbl_overlap" style="margin-left:16px;">{{ t['overlap'] }}<input type="number" name="overlap" value="15" min="0" max="50" style="width:60px" /></label><br><br>
+      <button id="btn_start_split" type="submit" class="btn">{{ t['start_split'] }}</button>
+      <button id="btn_cancel_split" type="button" class="btn btn-danger" onclick="closeSplitDialog()">{{ t['cancel'] }}</button>
     </form>
     <div id="splitProgress" style="margin-top:16px;">
       <div id="splitProgressBar" style="height:18px; background:#f0f0f0; border-radius:8px; overflow:hidden;">
@@ -109,20 +109,40 @@
     </div>
   </div>
 </div>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://unpkg.com/element-plus"></script>
 <script>
+window._t = {{ t|tojson }};
+window._lang = "{{ lang }}";
+</script>
+<script>
+const t = window._t;
+var MSG_DELETE_CONFIRM = "{{ t['delete_confirm'] }}";
+var MSG_DELETE_SUCCESS = "{{ t['delete_success'] }}";
+var MSG_DELETE_FAIL = "{{ t['delete_fail'] }}";
+var MSG_UPLOAD_SUCCESS = "{{ t['upload_success'] }}";
+var MSG_UPLOAD_FAIL = "{{ t['upload_fail'] }}";
+var MSG_SPLITTING = "{{ t['splitting'] }}";
+var MSG_PROGRESS = "{{ t['progress'] }}";
+var MSG_SPLIT_DONE = "{{ t['split_done'] }}";
+var MSG_SPLIT_FAIL = "{{ t['split_fail'] }}";
 document.getElementById('uploadForm').onsubmit = async function(e) {
     e.preventDefault();
     const formData = new FormData(this);
     const resp = await fetch('/api/upload', {method:'POST', body:formData});
-    if (resp.ok) { alert('上传成功'); location.reload(); }
-    else { alert('上传失败'); }
+    if (resp.ok) {
+        ElementPlus.ElMessage.success(t['upload_success']);
+        location.reload();
+    } else {
+        ElementPlus.ElMessage.error(t['upload_fail']);
+    }
 };
 let splitFileId = null, splitProgressTimer = null;
 function showSplitDialog(fileId) {
     splitFileId = fileId;
     document.getElementById('splitFileId').value = fileId;
     document.getElementById('splitDialog').style.display = 'flex';
-    document.getElementById('splitProgressText').innerText = '';
+    document.getElementById('splitProgressText').innerText = MSG_SPLITTING;
     document.getElementById('splitProgressInner').style.width = '0';
 }
 function closeSplitDialog() {
@@ -135,7 +155,7 @@ document.getElementById('splitForm').onsubmit = async function(e) {
     const method = this.method.value;
     const blockSize = this.block_size.value;
     const overlap = this.overlap.value;
-    document.getElementById('splitProgressText').innerText = '分块中...';
+    document.getElementById('splitProgressText').innerText = MSG_SPLITTING;
     document.getElementById('splitProgressInner').style.width = '0';
     await fetch(`/api/files/${fileId}/split`, {
         method: 'POST',
@@ -151,23 +171,37 @@ document.getElementById('splitForm').onsubmit = async function(e) {
             percent = Math.floor((data.current / data.total) * 100);
         }
         document.getElementById('splitProgressInner').style.width = percent + '%';
-        document.getElementById('splitProgressText').innerText = `进度：${percent}%`;
+        document.getElementById('splitProgressText').innerText = MSG_PROGRESS + percent + '%';
         if (data.status === 'done') {
-            document.getElementById('splitProgressText').innerText = '分块完成！';
+            document.getElementById('splitProgressText').innerText = MSG_SPLIT_DONE;
             clearInterval(splitProgressTimer);
             setTimeout(()=>{ closeSplitDialog(); location.reload(); }, 1200);
         }
         if (data.status === 'error') {
-            document.getElementById('splitProgressText').innerText = '分块失败';
+            document.getElementById('splitProgressText').innerText = MSG_SPLIT_FAIL;
             clearInterval(splitProgressTimer);
         }
     }, 500);
 };
 async function deleteFile(id) {
-    if (!confirm('确定要删除该文件吗？')) return;
-    const resp = await fetch(`/api/files/${id}/delete`, {method:'POST'});
-    if (resp.ok) { alert('删除成功'); location.reload(); }
-    else { alert('删除失败'); }
+    ElementPlus.ElMessageBox.confirm(
+        t['delete_confirm'],
+        t['alert_title'],
+        {
+            confirmButtonText: t['confirm'],
+            cancelButtonText: t['cancel'],
+            type: 'warning',
+            center: true
+        }
+    ).then(async () => {
+        const resp = await fetch(`/api/files/${id}/delete`, {method:'POST'});
+        if (resp.ok) {
+            ElementPlus.ElMessage.success(t['delete_success']);
+            location.reload();
+        } else {
+            ElementPlus.ElMessage.error(t['delete_fail']);
+        }
+    }).catch(() => {});
 }
 function viewChunks(fileId) {
     window.location.href = '/chunk.html?file_id=' + fileId;

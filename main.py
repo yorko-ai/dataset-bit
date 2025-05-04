@@ -28,6 +28,7 @@ import re
 from pydantic import BaseModel
 import csv, io
 from fastapi.exceptions import RequestValidationError
+from app.i18n import LANGS
 
 # 加载环境变量
 load_dotenv()
@@ -138,15 +139,16 @@ def init_settings_table():
             api_base TEXT,
             api_key TEXT,
             model_name TEXT,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            language TEXT DEFAULT 'zh',
+            theme TEXT DEFAULT 'light'
         )
     ''')
     c.execute('SELECT COUNT(*) FROM settings')
     if c.fetchone()[0] == 0:
-        c.execute('INSERT INTO settings (api_base, api_key, model_name) VALUES ("", "", "")')
+        c.execute('INSERT INTO settings (api_base, api_key, model_name, language, theme) VALUES ("", "", "", "zh", "light")')
     conn.commit()
     conn.close()
-init_settings_table()
 
 @app.get("/", include_in_schema=False)
 async def root():
@@ -692,6 +694,18 @@ async def files_page(request: Request):
     # 按上传时间倒序排序
     files.sort(key=lambda x: x["upload_time"], reverse=True)
     
+    # 添加状态的多语言映射
+    status_map = {
+        '待处理': t['status_pending'],
+        '已分块': t['status_chunked'],
+        '已完成': t['status_done'],
+        'pending': t['status_pending'],
+        'chunked': t['status_chunked'],
+        'done': t['status_done'],
+    }
+    for f in files:
+        f['status_translated'] = status_map.get(f['status'], f['status'])
+    
     return templates.TemplateResponse(
         "files.html",
         {
@@ -733,26 +747,66 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.get("/file.html", response_class=HTMLResponse)
 async def file_page(request: Request):
     """文件管理页面"""
+    lang = request.query_params.get('lang') or request.cookies.get('lang') or 'zh'
+    t = LANGS.get(lang, LANGS['zh'])
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM files ORDER BY created_at DESC")
     files = [dict(row) for row in cursor.fetchall()]
     conn.close()
+    status_map = {
+        '待处理': t['status_pending'],
+        '已分块': t['status_chunked'],
+        '已完成': t['status_done'],
+        'pending': t['status_pending'],
+        'chunked': t['status_chunked'],
+        'done': t['status_done'],
+    }
+    for f in files:
+        f['status_translated'] = status_map.get(f['status'], f['status'])
     return templates.TemplateResponse("file.html", {
         "request": request,
         "files": files,
-        "page": "file"
+        "page": "file",
+        "t": t,
+        "lang": lang
+    })
+
+@app.get("/chunk.html", response_class=HTMLResponse)
+async def chunk_page(request: Request):
+    """分块管理页面"""
+    lang = request.query_params.get('lang') or request.cookies.get('lang') or 'zh'
+    t = LANGS[lang]
+    return templates.TemplateResponse("chunk.html", {
+        "request": request,
+        "page": "chunk",
+        "lang": lang,
+        "t": t
     })
 
 @app.get("/dataset.html", response_class=HTMLResponse)
 async def dataset_page(request: Request):
-    """数据集管理页面"""
-    return templates.TemplateResponse("dataset.html", {"request": request, "page": "dataset"})
+    """数据导出页面"""
+    lang = request.query_params.get('lang') or request.cookies.get('lang') or 'zh'
+    t = LANGS[lang]
+    return templates.TemplateResponse("dataset.html", {
+        "request": request,
+        "page": "dataset",
+        "lang": lang,
+        "t": t
+    })
 
-@app.get("/progress.html", response_class=HTMLResponse)
-async def progress_page(request: Request):
-    """进度页面"""
-    return templates.TemplateResponse("progress.html", {"request": request, "page": "progress"})
+@app.get("/settings.html", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """系统设置页面"""
+    lang = request.query_params.get('lang') or request.cookies.get('lang') or 'zh'
+    t = LANGS[lang]
+    return templates.TemplateResponse("settings.html", {
+        "request": request,
+        "page": "settings",
+        "lang": lang,
+        "t": t
+    })
 
 split_progress = {}
 
@@ -934,11 +988,6 @@ async def get_file_chunks(file_id: int, page: int = 1, page_size: int = 10):
         logger.error(f"获取分块列表失败: {str(e)}")
         raise HTTPException(status_code=500, detail="获取分块列表失败")
 
-@app.get("/chunk.html", response_class=HTMLResponse)
-async def chunk_page(request: Request):
-    """分块管理页面"""
-    return templates.TemplateResponse("chunk.html", {"request": request, "page": "chunk"})
-
 @app.delete("/api/chunks/{chunk_id}")
 async def delete_chunk(chunk_id: int):
     try:
@@ -973,17 +1022,18 @@ async def get_settings():
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute("SELECT api_base, api_key, model_name FROM settings LIMIT 1")
+        c.execute("SELECT api_base, api_key, model_name, language, theme FROM settings LIMIT 1")
         row = c.fetchone()
         conn.close()
-        
         if row:
             return {
                 "status": "success",
                 "data": {
                     "api_base": row[0] or "",
                     "api_key": row[1] or "",
-                    "model_name": row[2] or ""
+                    "model_name": row[2] or "",
+                    "language": row[3] or "zh",
+                    "theme": row[4] or "light"
                 }
             }
         return {
@@ -991,7 +1041,9 @@ async def get_settings():
             "data": {
                 "api_base": "",
                 "api_key": "",
-                "model_name": ""
+                "model_name": "",
+                "language": "zh",
+                "theme": "light"
             }
         }
     except Exception as e:
@@ -999,23 +1051,23 @@ async def get_settings():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/settings")
-async def save_settings(data: dict):
+async def save_settings(request: Request):
     """保存系统设置"""
     try:
+        data = await request.json()
+        api_base = data.get('api_base', '')
+        api_key = data.get('api_key', '')
+        model_name = data.get('model_name', '')
+        language = data.get('language', 'zh')
+        theme = data.get('theme', 'light')
         conn = get_db()
         c = conn.cursor()
-        c.execute("""
-            UPDATE settings 
-            SET api_base = ?, api_key = ?, model_name = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE id = 1
-        """, (data.get("api_base", ""), data.get("api_key", ""), data.get("model_name", "")))
+        c.execute("UPDATE settings SET api_base=?, api_key=?, model_name=?, language=?, theme=?, updated_at=CURRENT_TIMESTAMP WHERE id=1", (api_base, api_key, model_name, language, theme))
         conn.commit()
         conn.close()
-        
-        return {"status": "success", "message": "设置已保存"}
+        return JSONResponse({"status": "success"})
     except Exception as e:
-        logger.error(f"保存设置失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 @app.post("/api/settings/test")
 async def test_settings(data: dict):
@@ -1041,17 +1093,13 @@ async def test_settings(data: dict):
         logger.error(f"测试连接失败: {str(e)}")
         return {"status": "error", "message": str(e)}
 
-@app.get("/settings.html", response_class=HTMLResponse)
-async def settings_page(request: Request):
-    """系统设置页面"""
-    return templates.TemplateResponse("settings.html", {"request": request, "page": "settings"})
-
 @app.post("/api/generate-qa")
 async def generate_qa(data: dict):
     try:
         segments = data.get("segments", [])
         num_pairs = int(data.get("num_pairs", 3))
         file_id = int(data.get("file_id", 0))
+        lang = data.get("lang", "zh")
         if not segments or not num_pairs or not file_id:
             return {"status": "error", "message": "参数不完整"}
         # 获取大模型设置
@@ -1074,14 +1122,16 @@ async def generate_qa(data: dict):
         conn = get_db()
         c = conn.cursor()
         for seg in segments:
-            # 支持seg为对象（含id和content）或字符串
             if isinstance(seg, dict):
                 segment_id = seg.get('id', 0)
                 seg_content = seg.get('content', '')
             else:
                 segment_id = 0
                 seg_content = seg
-            prompt = f"""基于以下文本内容，生成{num_pairs}个问答对。每个问答对应包含问题和答案。\n请确保问题多样化，包括开放性问题和事实性问题。答案应该准确、完整且基于文本内容。\n请以JSON格式返回结果，格式为：\n[{{\"question\": \"问题1\", \"answer\": \"答案1\"}}, {{\"question\": \"问题2\", \"answer\": \"答案2\"}}]\n\n文本内容：\n{seg_content}"""
+            if lang == 'en':
+                prompt = f"""Based on the following text, generate {num_pairs} QA pairs. Each pair should include a question and an answer.\nEnsure the questions are diverse, including both open-ended and factual ones. Answers should be accurate, complete, and based on the text.\nReturn the result in JSON format as follows:\n[{{\"question\": \"Question 1\", \"answer\": \"Answer 1\"}}, {{\"question\": \"Question 2\", \"answer\": \"Answer 2\"}}]\n\nText:\n{seg_content}\n\nPlease reply in English."""
+            else:
+                prompt = f"""基于以下文本内容，生成{num_pairs}个问答对。每个问答对应包含问题和答案。\n请确保问题多样化，包括开放性问题和事实性问题。答案应该准确、完整且基于文本内容。\n请以JSON格式返回结果，格式为：\n[{{\"question\": \"问题1\", \"answer\": \"答案1\"}}, {{\"question\": \"问题2\", \"answer\": \"答案2\"}}]\n\n文本内容：\n{seg_content}"""
             completion = openai.chat.completions.create(
                 model=model_name,
                 messages=[{"role": "user", "content": prompt}],
