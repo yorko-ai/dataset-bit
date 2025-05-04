@@ -246,17 +246,17 @@ dataset-bit/
 ## 系统界面预览
 
 ### 1. 数据集管理界面
-<img src="./frontend/static/dataset.png">
+<img src="https://blog.liuts.com/images/dataset-bit/dataset.png">
 
 > 用于上传、管理和分块多种格式的数据文件，支持多语言切换和批量操作。
 
 ### 2. 数据集导出界面
-<img src="./frontend/static/export.png">
+<img src="https://blog.liuts.com/images/dataset-bit/export.png">
 
 > 支持多种格式（如Alpaca、ChatGLM等）导出问答对数据，参数灵活可选，界面风格统一。
 
 ### 3. Alpaca数据集示例
-<img src="./frontend/static/alpaca.png">
+<img src="https://blog.liuts.com/images/dataset-bit/alpaca.png">
 
 > 展示Alpaca格式数据的问答对内容，支持分页、批量操作和多语言切换。
 
