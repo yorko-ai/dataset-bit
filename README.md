@@ -248,17 +248,17 @@ Thanks to all developers who have contributed to this project!
 ## System Screenshots
 
 ### 1. Dataset Management Interface
-![Dataset Management](frontend/static/dataset.png)
+<img src="./frontend/static/dataset.png">
 
 > Used for uploading, managing, and chunking various data files. Supports multi-language switching and batch operations.
 
 ### 2. Dataset Export Interface
-![Dataset Export](frontend/static/export.png)
+<img src="./frontend/static/export.png">
 
 > Supports exporting QA pairs in multiple formats (such as Alpaca, ChatGLM, etc.), flexible parameter selection, and unified UI style.
 
 ### 3. Alpaca Dataset Example
-![Alpaca Dataset](frontend/static/alpaca.png)
+<img src="./frontend/static/alpaca.png">
 
 > Shows QA pairs in Alpaca format, with pagination, batch operations, and multi-language switching.
 
