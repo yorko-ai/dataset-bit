@@ -31,26 +31,26 @@ Dataset-Bit 是一款面向大语言模型（LLM）微调数据集构建的开�
 
 ## 🚀 安装与启动
 1. 克隆仓库并进入目录
-   ```bash
+```bash
    git clone https://gitee.com/yorkoliu/dataset-bit.git
-   cd dataset-bit
-   ```
+cd dataset-bit
+```
 2. 安装依赖
-   ```bash
-   python -m venv venv
-   # Windows
-   venv\Scripts\activate
-   # Linux/Mac
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+```bash
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+pip install -r requirements.txt
+```
 3. 初始化数据库
-   ```bash
+```bash
    sqlite3 dataset_bit.db < init_db.sql
    ```
 4. 配置.env，填写API密钥
 5. 启动后端
-   ```bash
+```bash
    python main.py
    ```
 6. 访问 http://localhost:8000

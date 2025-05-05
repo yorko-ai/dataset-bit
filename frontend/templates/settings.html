@@ -3,6 +3,7 @@
 {% block head %}
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script src="https://unpkg.com/element-plus"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue"></script>
 <style>
     .settings-container {
         max-width: 800px;
@@ -137,9 +138,16 @@
 {% endblock %}
 
 {% block content %}
+<script id="init-data" type="application/json">
+{
+  "t": {{ t|tojson|safe if t is defined else '{}' }},
+  "lang": "{{ lang if lang is defined else 'zh' }}"
+}
+</script>
 <script>
-window._t = {{ t|tojson }};
-window._lang = "{{ lang }}";
+const initData = JSON.parse(document.getElementById('init-data').textContent);
+window._t = initData.t;
+window._lang = initData.lang;
 </script>
 {% raw %}
 <div id="app">
@@ -158,10 +166,13 @@ window._lang = "{{ lang }}";
                         </div>
                         <div class="settings-item">
                             <label v-text="t['api_key'] + ':'"></label>
-                            <div style="display:flex;align-items:center;">
+                            <div style="display:flex;align-items:center;position:relative;">
                                 <input :type="showKey ? 'text' : 'password'" v-model="api_key" :placeholder="t['api_key_placeholder']" class="input">
-                                <span @click="showKey = !showKey" style="margin-left:8px;cursor:pointer;">
-                                    <el-icon><View v-if="showKey"/><Hide v-else/></el-icon>
+                                <span @click="showKey = !showKey"
+                                      style="position:absolute;right:8px;cursor:pointer;z-index:10;display:flex;align-items:center;">
+                                    <el-icon style="font-size:20px;color:#888;">
+                                        <component :is="showKey ? 'Hide' : 'View'" />
+                                    </el-icon>
                                 </span>
                             </div>
                         </div>
@@ -179,7 +190,15 @@ window._lang = "{{ lang }}";
                         </div>
                         <div class="settings-item">
                             <label v-text="t['score_api_key'] + ':'"></label>
-                            <input type="text" v-model="score_api_key" :placeholder="t['score_api_key_placeholder']" class="input">
+                            <div style="display:flex;align-items:center;position:relative;">
+                                <input :type="showScoreKey ? 'text' : 'password'" v-model="score_api_key" :placeholder="t['score_api_key_placeholder']" class="input">
+                                <span @click="showScoreKey = !showScoreKey"
+                                      style="position:absolute;right:8px;cursor:pointer;z-index:10;display:flex;align-items:center;">
+                                    <el-icon style="font-size:20px;color:#888;">
+                                        <component :is="showScoreKey ? 'Hide' : 'View'" />
+                                    </el-icon>
+                                </span>
+                            </div>
                         </div>
                         <div class="settings-item">
                             <label v-text="t['score_model_name'] + ':'"></label>
@@ -215,8 +234,9 @@ window._lang = "{{ lang }}";
 
 <script>
 const { createApp, ref, onMounted, watch } = Vue
+const { View, Hide } = window.ElementPlusIconsVue
 
-createApp({
+const app = createApp({
     setup() {
         const t = window._t;
         const api_base = ref('')
@@ -230,6 +250,7 @@ createApp({
         const loading = ref(true)
         const error = ref("")
         const showKey = ref(false)
+        const showScoreKey = ref(false)
 
         // 校验函数
         const validate = (type) => {
@@ -238,11 +259,13 @@ createApp({
                 if (!/^https?:\/\/.+/.test(api_base.value)) return t['api_base_placeholder'];
                 if (!api_key.value) return t['api_key_placeholder'];
                 if (!model_name.value) return t['model_name_placeholder'];
+                if (api_key.value.length < 8) return t['api_key_too_short'];
             } else if (type === 'score') {
                 if (!score_api_url.value) return t['score_api_url_placeholder'];
                 if (!/^https?:\/\/.+/.test(score_api_url.value)) return t['score_api_url_placeholder'];
                 if (!score_api_key.value) return t['score_api_key_placeholder'];
                 if (!score_model_name.value) return t['score_model_name_placeholder'];
+                if (score_api_key.value.length < 8) return t['api_key_too_short'];
             }
             return '';
         };
@@ -348,9 +371,11 @@ createApp({
             if (theme === 'dark') {
                 document.body.classList.add('theme-dark');
                 document.body.classList.remove('theme-light');
+                document.documentElement.style.colorScheme = 'dark';
             } else {
                 document.body.classList.add('theme-light');
                 document.body.classList.remove('theme-dark');
+                document.documentElement.style.colorScheme = 'light';
             }
         }
 
@@ -384,12 +409,19 @@ createApp({
             loading,
             error,
             showKey,
+            showScoreKey,
             save,
             testConn,
             changeLang
         }
     }
-}).use(ElementPlus).mount('#app')
+})
+.use(ElementPlus)
+// 全量注册图标
+for (const [key, component] of Object.entries(window.ElementPlusIconsVue)) {
+    app.component(key, component)
+}
+app.mount('#app')
 </script>
 {% endraw %}
 {% endblock %} 
