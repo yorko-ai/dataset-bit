@@ -126,13 +126,9 @@ python -m app.main
 #### Text Processing Parameters
 ```json
 {
-  "method": "paragraph",  // Segmentation method: paragraph/heading
-  "min_length": 100,     // Minimum paragraph length
-  "max_length": 1000,    // Maximum paragraph length
-  "question_types": ["what", "how", "why"],  // Question types
-  "difficulty": "medium",  // Question difficulty
-  "questions_per_segment": 3,  // Questions per segment
-  "answer_style": "detailed"  // Answer style
+  "method": "auto",        // Split method: auto (smart recursive), heading, paragraph, table
+  "block_size": 1000,      // Max characters per block (100-5000)
+  "overlap": 15            // Overlap percentage (0-50)
 }
 ```
 

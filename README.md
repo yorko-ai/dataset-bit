@@ -127,13 +127,9 @@ python -m app.main
 #### 文本处理参数
 ```json
 {
-  "method": "paragraph",  // 分割方法：paragraph/heading
-  "min_length": 100,     // 最小段落长度
-  "max_length": 1000,    // 最大段落长度
-  "question_types": ["what", "how", "why"],  // 问题类型
-  "difficulty": "medium",  // 问题难度
-  "questions_per_segment": 3,  // 每段问题数量
-  "answer_style": "detailed"  // 答案风格
+  "method": "auto",        // 分块方式：auto（智能递归分层）、heading（按标题）、paragraph（按段落）、table（按表格单元）
+  "block_size": 1000,      // 每块最大字符数（100-5000）
+  "overlap": 15            // 重叠率百分比（0-50）
 }
 ```
 
