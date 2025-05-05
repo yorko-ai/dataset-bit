@@ -1,270 +1,268 @@
 # Dataset-Bit 🚀
 
-<div align="center">
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100.0-green.svg)](https://fastapi.tiangolo.com/)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.3.0-brightgreen.svg)](https://vuejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/yorkoliu/dataset-bit?style=social)](https://github.com/yorkoliu/dataset-bit/stargazers)
+[![Gitee Stars](https://gitee.com/yorkoliu/dataset-bit/badge/star.svg?theme=white)](https://gitee.com/yorkoliu/dataset-bit)
 
-[English](README.md) | [中文](README_CN.md)
+[English](README_EN.md) | [中文](README.md)
 
-</div>
 
-## 📖 Project Introduction
+## 📖 项目简介
 
-Dataset-Bit is a powerful open-source tool designed for generating and optimizing fine-tuning datasets for Large Language Models (LLMs). It intelligently extracts text from various documents, generates high-quality question-answer pairs, and exports them in standard training dataset formats. Whether you're a researcher, developer, or data scientist, Dataset-Bit helps you quickly build high-quality LLM training data.
+Dataset-Bit 是一个强大的开源工具，专门用于生成和优化大型语言模型（LLM）的微调数据集。它能够智能地从各种文档中提取文本，生成高质量的问答对，并导出为标准的训练数据集格式。无论是开发者还是数据科学家，都可以使用 Dataset-Bit 来快速构建高质量的 LLM 训练数据。
 
-### ✨ Core Features
+### ✨ 核心特性
 
-- 📚 **Multi-format Support**: Supports TXT, MD, DOCX, PDF, and more
-- 🔍 **Smart Segmentation**: Intelligent text segmentation based on paragraphs or headings
-- 🤖 **AI Generation**: Automatically generates diverse, high-quality questions and answers
-- 📊 **Quality Assessment**: Built-in QA pair quality evaluation system
-- 📦 **Format Conversion**: Supports multiple dataset formats like Alpaca, ShareGPT
-- 📈 **Data Statistics**: Complete file management and data analysis
-- 🔄 **Batch Processing**: Supports batch file processing and parallel processing
-- 🎯 **Custom Configuration**: Flexible parameter configuration and customization options
+- 📚 **多格式支持**：支持 TXT、MD、DOCX、PDF 等多种文档格式
+- 🔍 **智能分割**：基于段落或标题的智能文本分割
+- 🤖 **AI 生成**：自动生成多样化、高质量的问题和答案
+- 📊 **质量评估**：内置问答对质量评估系统
+- 📦 **格式转换**：支持 Alpaca、ShareGPT 等多种数据集格式
+- 📈 **数据统计**：完整的文件管理和数据统计分析
+- 🔄 **批量处理**：支持批量文件处理和并行处理
+- 🎯 **自定义配置**：灵活的参数配置和自定义选项
 
-## 🛠️ Tech Stack
+## 🛠️ 技术栈
 
-### Backend
-- **Framework**: FastAPI
-- **Language**: Python 3.8+
-- **Database**: SQLite
-- **AI Model**: OpenAI GPT-3.5
-- **Document Processing**: PyPDF2, python-docx, markdown
+### 后端
+- **框架**：FastAPI
+- **语言**：Python 3.8+
+- **数据库**：SQLite
+- **AI 模型**：OpenAI GPT-3.5
+- **文档处理**：PyPDF2, python-docx, markdown
 
-### Frontend
-- **Framework**: Vue.js 3
-- **Build Tool**: Vite
-- **UI Components**: Element Plus
-- **State Management**: Pinia
-- **HTTP Client**: Axios
+### 前端
+- **框架**：Vue.js 3
+- **构建工具**：Vite
+- **UI 组件**：Element Plus
+- **状态管理**：Pinia
+- **HTTP 客户端**：Axios
 
-## 🚀 Quick Start
+## 🚀 快速开始
 
-### System Requirements
-- Python 3.8 or higher
-- Node.js 16 or higher
-- Minimum 4GB RAM
-- Stable internet connection
+### 系统要求
+- Python 3.8 或更高版本
+- Node.js 16 或更高版本
+- 至少 4GB RAM
+- 稳定的网络连接
 
-### Database Initialization
-This project uses SQLite. Before the first run, please initialize the database structure with:
+### 数据库初始化
+本项目使用 SQLite 数据库。首次运行前请执行以下命令初始化数据库结构：
 
 ```bash
 sqlite3 dataset_bit.db < init_db.sql
 ```
-If you don't have the `sqlite3` CLI tool, you can also initialize via Python script, see `app/models/database.py`.
+如无 sqlite3 命令行工具，也可通过 Python 脚本初始化，详见 `app/models/database.py`。
 
-### Installation Steps
+### 安装步骤
 
-1. **Clone Repository**
+1. **克隆仓库**
 ```bash
-git clone https://github.com/yorkoliu/dataset-bit.git
+git clone https://gitee.com/yorkoliu/dataset-bit.git
 cd dataset-bit
 ```
 
-2. **Set Up Python Environment**
+2. **设置 Python 环境**
 ```bash
-# Create virtual environment
+# 创建虚拟环境
 python -m venv venv
 
-# Activate virtual environment
+# 激活虚拟环境
 # Windows
 venv\Scripts\activate
 # Linux/Mac
 source venv/bin/activate
 
-# Install dependencies
+# 安装依赖
 pip install -r requirements.txt
 ```
 
-3. **Configure Environment Variables**
+3. **配置环境变量**
 ```bash
-# Copy environment variable template
+# 复制环境变量模板
 cp .env.example .env
 
-# Edit .env file, set necessary configurations
-# Especially OPENAI_API_KEY and other required API keys
+# 编辑 .env 文件，设置必要的配置
+# 特别是 OPENAI_API_KEY 和其他必要的 API 密钥
 ```
 
-4. **Start Services**
+4. **启动服务**
 ```bash
-# Start backend service
+# 启动后端服务
 python -m app.main
 ```
 
-5. **Access Application**
-- Frontend Interface: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
-- Health Check: http://localhost:8000/health
+5. **访问应用**
+- 前端界面：http://localhost:8000
+- API 文档：http://localhost:8000/docs
+- 健康检查：http://localhost:8000/health
 
-## 📚 Detailed Documentation
+## 📚 详细文档
 
-### API Endpoints
+### API 接口
 
-#### File Management
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/upload` | POST | Upload file |
-| `/api/files` | GET | Get file list |
-| `/api/files/{file_id}` | GET | Get file details |
-| `/api/files/{file_id}` | DELETE | Delete file |
+#### 文件管理
+| 接口 | 方法 | 描述 |
+|------|------|------|
+| `/api/upload` | POST | 上传文件 |
+| `/api/files` | GET | 获取文件列表 |
+| `/api/files/{file_id}` | GET | 获取文件详情 |
+| `/api/files/{file_id}` | DELETE | 删除文件 |
 
-#### Text Processing
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/process/{file_id}` | POST | Process file and generate QA pairs |
-| `/api/segments/{segment_id}/qa` | GET | Get QA pairs |
+#### 文本处理
+| 接口 | 方法 | 描述 |
+|------|------|------|
+| `/api/process/{file_id}` | POST | 处理文件并生成问答对 |
+| `/api/segments/{segment_id}/qa` | GET | 获取问答对 |
 
-#### Data Export
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/export/{file_id}` | POST | Export dataset |
-| `/api/stats` | GET | Get dataset statistics |
+#### 数据导出
+| 接口 | 方法 | 描述 |
+|------|------|------|
+| `/api/export/{file_id}` | POST | 导出数据集 |
+| `/api/stats` | GET | 获取数据集统计信息 |
 
-### Configuration Parameters
+### 配置参数
 
-#### Text Processing Parameters
+#### 文本处理参数
 ```json
 {
-  "method": "paragraph",  // Segmentation method: paragraph/heading
-  "min_length": 100,     // Minimum paragraph length
-  "max_length": 1000,    // Maximum paragraph length
-  "question_types": ["what", "how", "why"],  // Question types
-  "difficulty": "medium",  // Question difficulty
-  "questions_per_segment": 3,  // Questions per segment
-  "answer_style": "detailed"  // Answer style
+  "method": "paragraph",  // 分割方法：paragraph/heading
+  "min_length": 100,     // 最小段落长度
+  "max_length": 1000,    // 最大段落长度
+  "question_types": ["what", "how", "why"],  // 问题类型
+  "difficulty": "medium",  // 问题难度
+  "questions_per_segment": 3,  // 每段问题数量
+  "answer_style": "detailed"  // 答案风格
 }
 ```
 
-## 📁 Project Structure
+## 📁 项目结构
 
 ```
 dataset-bit/
 ├── app/
-│   ├── main.py              # Main application entry
-│   ├── routers/             # API route definitions
+│   ├── main.py              # 主应用程序入口
+│   ├── routers/             # API 路由定义
 │   │   └── api.py
-│   ├── services/            # Business service layer
-│   │   ├── file_service.py  # File processing service
-│   │   ├── llm_service.py   # LLM service
-│   │   └── db_service.py    # Database service
-│   ├── models/              # Data models
+│   ├── services/            # 业务服务层
+│   │   ├── file_service.py  # 文件处理服务
+│   │   ├── llm_service.py   # LLM 服务
+│   │   └── db_service.py    # 数据库服务
+│   ├── models/              # 数据模型
 │   │   └── database.py
-│   └── utils/               # Utility functions
+│   └── utils/               # 工具函数
 │       ├── batch_processor.py
 │       ├── file_handler.py
 │       └── quality_evaluator.py
-├── frontend/                # Frontend code
+├── frontend/                # 前端代码
 │   ├── src/
-│   │   ├── components/      # Vue components
-│   │   ├── views/          # Page views
-│   │   ├── store/          # State management
-│   │   └── api/            # API calls
-│   └── public/             # Static resources
-├── tests/                   # Test cases
-├── uploads/                 # Upload directory
-├── exports/                 # Export directory
-├── .env.example            # Environment variables example
-├── requirements.txt        # Python dependencies
-└── README.md              # Project documentation
+│   │   ├── components/      # Vue 组件
+│   │   ├── views/          # 页面视图
+│   │   ├── store/          # 状态管理
+│   │   └── api/            # API 调用
+│   └── public/             # 静态资源
+├── tests/                   # 测试用例
+├── uploads/                 # 上传文件目录
+├── exports/                 # 导出文件目录
+├── .env.example            # 环境变量示例
+├── requirements.txt        # Python 依赖
+└── README.md              # 项目说明
 ```
 
-## 👥 Development Guidelines
+## 👥 开发指南
 
-### Backend Development Standards
-1. Follow PEP 8 coding standards
-2. Use type annotations
-3. Write unit tests (coverage > 80%)
-4. Use logging for key operations
-5. Use async programming for I/O operations
+### 后端开发规范
+1. 遵循 PEP 8 编码规范
+2. 使用类型注解
+3. 编写单元测试（覆盖率 > 80%）
+4. 使用日志记录关键操作
+5. 使用异步编程处理 I/O 操作
 
-### Frontend Development Standards
-1. Use Vue 3 Composition API
-2. Follow component-based development principles
-3. Use TypeScript for type checking
-4. Implement responsive design
-5. Follow ESLint standards
+### 前端开发规范
+1. 使用 Vue 3 组合式 API
+2. 遵循组件化开发原则
+3. 使用 TypeScript 进行类型检查
+4. 实现响应式设计
+5. 遵循 ESLint 规范
 
-## 🤝 Contributing
+## 🤝 贡献指南
 
-We welcome contributions in any form, including but not limited to:
+我们欢迎任何形式的贡献，包括但不限于：
 
-1. Submitting issues and suggestions
-2. Improving documentation
-3. Submitting code improvements
-4. Sharing usage experiences
+1. 提交问题和建议
+2. 改进文档
+3. 提交代码改进
+4. 分享使用经验
 
-### Contribution Process
+### 贡献流程
 
-1. Fork the project
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Create Pull Request
+1. Fork 项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建 Pull Request
 
-### Code Standards
+### 代码规范
 
-- Follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages
-- Include tests for code changes
-- Ensure all tests pass
-- Update relevant documentation
+- 提交信息遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范
+- 代码变更需要包含相应的测试
+- 确保所有测试通过
+- 更新相关文档
 
-## 📝 Changelog
+## 📝 更新日志
 
 ### v1.0.0 (2025-05-03)
-- 🎉 Initial release
-- ✨ Implement basic features
-- 📚 Support multiple document formats
-- 🤖 Integrate OpenAI GPT-3.5
-- 🎨 Implement basic UI interface
+- 🎉 首次发布
+- ✨ 实现基础功能
+- 📚 支持多种文档格式
+- 🤖 集成 OpenAI GPT-3.5
+- 🎨 实现基础 UI 界面
 
-## 📄 License
+## 📄 许可证
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
 
-## 📞 Contact
+## 📞 联系方式
 
-- Author: York Liu
-- Email: liutiansi@gmail.com
-- WeChat: yorkoliu
-- GitHub: [yorkoliu](https://github.com/yorkoliu)
-- Project Home: [Dataset-Bit](https://github.com/yorkoliu/dataset-bit)
+- 作者：刘天斯 (York Liu)
+- 邮箱：liutiansi@gmail.com
+- 微信：yorkoliu
+- Gitee：[yorkoliu](https://gitee.com/yorkoliu)
+- 项目主页：[Dataset-Bit](https://gitee.com/yorkoliu/dataset-bit)
 
-## 🙏 Acknowledgments
+## 🙏 致谢
 
-Thanks to all developers who have contributed to this project!
+感谢所有为本项目做出贡献的开发者！
 
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by <a href="https://github.com/yorkoliu">York Liu</a></sub>
+  <sub>Built with ❤️ by <a href="https://gitee.com/yorkoliu">York Liu</a></sub>
 </div>
 
-## System Screenshots
+## 系统界面预览
 
-### 1. Dataset Management Interface
-![Dataset Management](frontend/static/dataset.png)
+### 1. 数据集管理界面
+![数据集管理](frontend/static/dataset.png)
 
-> Used for uploading, managing, and chunking various data files. Supports multi-language switching and batch operations.
+> 用于上传、管理和分块多种格式的数据文件，支持多语言切换和批量操作。
 
-### 2. Dataset Export Interface
-![Export Options](frontend/static/export.png)
+### 2. 数据集导出界面
+![导出选项](frontend/static/export.png)
 
-> Supports exporting QA pairs in multiple formats (such as Alpaca, ChatGLM, etc.), flexible parameter selection, and unified UI style.
+> 支持多种格式（如Alpaca、ChatGLM等）导出问答对数据，参数灵活可选，界面风格统一。
 
-### 3. Alpaca Dataset Example
-![Alpaca Format](frontend/static/alpaca.png)
+### 3. Alpaca数据集示例
+![Alpaca格式](frontend/static/alpaca.png)
 
-> Shows QA pairs in Alpaca format, with pagination, batch operations, and multi-language switching.
+> 展示Alpaca格式数据的问答对内容，支持分页、批量操作和多语言切换。
 
 ---
 
-## Additional Notes
-- All interfaces support dark/light theme switching, with highly unified UI style.
-- Supports one-click switching between Chinese and English, all prompts, buttons, and table headers are fully internationalized.
-- See below for detailed feature descriptions and usage instructions. 
+## 其它说明
+- 所有界面均支持深色/浅色主题切换，UI风格高度统一。
+- 支持多语言（中英文）一键切换，所有提示、按钮、表头等均多语言化。
+- 详见下方功能说明与使用方法。 
