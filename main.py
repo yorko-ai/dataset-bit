@@ -1,7 +1,7 @@
 import os
 import logging
 from datetime import datetime
-from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form, BackgroundTasks, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +29,7 @@ from pydantic import BaseModel
 import csv, io
 from fastapi.exceptions import RequestValidationError
 from app.i18n import LANGS
+from openai import OpenAI
 
 # 加载环境变量
 load_dotenv()
@@ -141,12 +142,15 @@ def init_settings_table():
             model_name TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             language TEXT DEFAULT 'zh',
-            theme TEXT DEFAULT 'light'
+            theme TEXT DEFAULT 'light',
+            score_api_url TEXT,
+            score_api_key TEXT,
+            score_model_name TEXT
         )
     ''')
     c.execute('SELECT COUNT(*) FROM settings')
     if c.fetchone()[0] == 0:
-        c.execute('INSERT INTO settings (api_base, api_key, model_name, language, theme) VALUES ("", "", "", "zh", "light")')
+        c.execute('INSERT INTO settings (api_base, api_key, model_name, language, theme, score_api_url, score_api_key, score_model_name) VALUES ("", "", "", "zh", "light", "", "", "")')
     conn.commit()
     conn.close()
 
@@ -361,6 +365,86 @@ async def evaluate_quality(qa_pairs: List[Dict[str, str]], context: str = None):
     except Exception as e:
         logger.error(f"质量评估失败: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/qa-pairs/{qa_id}/evaluate")
+async def evaluate_qa_pair(qa_id: int, context: str = None):
+    """评估单个问答对的质量"""
+    try:
+        # 获取问答对
+        qa_pair = await db.fetch_one("""
+            SELECT question, answer
+            FROM qa_pairs
+            WHERE id = :qa_id
+        """, {"qa_id": qa_id})
+        
+        if not qa_pair:
+            raise HTTPException(status_code=404, detail="问答对不存在")
+        
+        # 评估质量
+        scores = await quality_evaluator.evaluate_qa_pair(
+            qa_pair["question"],
+            qa_pair["answer"],
+            context
+        )
+        
+        # 更新评分
+        await db.execute("""
+            UPDATE qa_pairs
+            SET accuracy_score = :accuracy,
+                completeness_score = :completeness,
+                relevance_score = :relevance,
+                clarity_score = :clarity,
+                total_score = :total
+            WHERE id = :qa_id
+        """, {
+            "qa_id": qa_id,
+            "accuracy": scores["accuracy"],
+            "completeness": scores["completeness"],
+            "relevance": scores["relevance"],
+            "clarity": scores["clarity"],
+            "total": scores["total"]
+        })
+        
+        return {
+            "status": "success",
+            "message": "评估完成",
+            "data": scores
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"评估问答对失败: {str(e)}")
+        raise HTTPException(status_code=500, detail="评估问答对失败")
+
+@app.get("/api/qa-pairs/{qa_id}/scores")
+async def get_qa_scores(qa_id: int):
+    """获取问答对评分"""
+    try:
+        scores = await db.fetch_one("""
+            SELECT accuracy_score, completeness_score,
+                   relevance_score, clarity_score, total_score
+            FROM qa_pairs
+            WHERE id = :qa_id
+        """, {"qa_id": qa_id})
+        
+        if not scores:
+            raise HTTPException(status_code=404, detail="问答对不存在")
+        
+        return {
+            "status": "success",
+            "data": {
+                "accuracy": scores["accuracy_score"],
+                "completeness": scores["completeness_score"],
+                "relevance": scores["relevance_score"],
+                "clarity": scores["clarity_score"],
+                "total": scores["total_score"]
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取问答对评分失败: {str(e)}")
+        raise HTTPException(status_code=500, detail="获取问答对评分失败")
 
 @app.post("/api/export")
 async def export_dataset(format: str = "alpaca", include_metadata: bool = True):
@@ -1022,7 +1106,7 @@ async def get_settings():
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute("SELECT api_base, api_key, model_name, language, theme FROM settings LIMIT 1")
+        c.execute("SELECT api_base, api_key, model_name, language, theme, score_api_url, score_api_key, score_model_name FROM settings LIMIT 1")
         row = c.fetchone()
         conn.close()
         if row:
@@ -1033,7 +1117,10 @@ async def get_settings():
                     "api_key": row[1] or "",
                     "model_name": row[2] or "",
                     "language": row[3] or "zh",
-                    "theme": row[4] or "light"
+                    "theme": row[4] or "light",
+                    "score_api_url": row[5] or "",
+                    "score_api_key": row[6] or "",
+                    "score_model_name": row[7] or ""
                 }
             }
         return {
@@ -1043,7 +1130,10 @@ async def get_settings():
                 "api_key": "",
                 "model_name": "",
                 "language": "zh",
-                "theme": "light"
+                "theme": "light",
+                "score_api_url": "",
+                "score_api_key": "",
+                "score_model_name": ""
             }
         }
     except Exception as e:
@@ -1060,9 +1150,15 @@ async def save_settings(request: Request):
         model_name = data.get('model_name', '')
         language = data.get('language', 'zh')
         theme = data.get('theme', 'light')
+        score_api_url = data.get('score_api_url', '')
+        score_api_key = data.get('score_api_key', '')
+        score_model_name = data.get('score_model_name', '')
         conn = get_db()
         c = conn.cursor()
-        c.execute("UPDATE settings SET api_base=?, api_key=?, model_name=?, language=?, theme=?, updated_at=CURRENT_TIMESTAMP WHERE id=1", (api_base, api_key, model_name, language, theme))
+        c.execute(
+            "UPDATE settings SET api_base=?, api_key=?, model_name=?, language=?, theme=?, score_api_url=?, score_api_key=?, score_model_name=?, updated_at=CURRENT_TIMESTAMP WHERE id=1",
+            (api_base, api_key, model_name, language, theme, score_api_url, score_api_key, score_model_name)
+        )
         conn.commit()
         conn.close()
         return JSONResponse({"status": "success"})
@@ -1148,7 +1244,7 @@ async def generate_qa(data: dict):
                 else:
                     continue
             for qa in qa_list:
-                c.execute("INSERT INTO qa_pairs (segment_id, question, answer, quality_scores, file_id) VALUES (?, ?, ?, ?, ?)", (segment_id, qa.get("question", ""), qa.get("answer", ""), '{}', file_id))
+                c.execute("INSERT INTO qa_pairs (segment_id, question, answer, file_id, score) VALUES (?, ?, ?, ?, ?)", (segment_id, qa.get("question", ""), qa.get("answer", ""), file_id, 1))
                 total_qa += 1
         conn.commit()
         conn.close()
@@ -1166,35 +1262,41 @@ async def no_cache_middleware(request, call_next):
     return response
 
 @app.get("/api/datasets_export")
-def export_datasets(ids: Optional[str] = None, format: str = 'alpaca', type: str = 'json'):
+def export_datasets(ids: Optional[str] = None, format: str = 'alpaca', type: str = 'json', score: str = '0'):
     if not ids:
         return {"status": "error", "message": "缺少导出文件ID"}
     try:
         file_ids = [int(id) for id in ids.split(',')]
+        score_filter = int(score) if score and score.isdigit() else 0
         conn = get_db()
         c = conn.cursor()
-        # 查询所有选中文件的问答对
+        # 查询所有选中文件的问答对，增加score过滤
         placeholders = ','.join('?' * len(file_ids))
-        c.execute(f"""
-            SELECT q.question, q.answer, f.filename 
+        sql = f"""
+            SELECT q.question, q.answer, f.filename, q.score 
             FROM qa_pairs q
             JOIN files f ON q.file_id = f.id
             WHERE q.file_id IN ({placeholders})
-            ORDER BY f.id, q.id
-        """, file_ids)
+        """
+        params = file_ids
+        if score_filter > 0:
+            sql += " AND q.score >= ?"
+            params = file_ids + [score_filter]
+        sql += " ORDER BY f.id, q.id"
+        c.execute(sql, params)
         rows = c.fetchall()
         conn.close()
         # 格式化数据
         data = []
         if format == 'alpaca':
-            for q, a, filename in rows:
+            for q, a, filename, s in rows:
                 data.append({
                     "instruction": q,
                     "input": "",
                     "output": a
                 })
         elif format == 'sharegpt':
-            for q, a, filename in rows:
+            for q, a, filename, s in rows:
                 data.append({
                     "conversations": [
                         {"from": "human", "value": q},
@@ -1202,7 +1304,7 @@ def export_datasets(ids: Optional[str] = None, format: str = 'alpaca', type: str
                     ]
                 })
         else:
-            data = [{"question": q, "answer": a, "source_file": filename} for q, a, filename in rows]
+            data = [{"question": q, "answer": a, "source_file": filename} for q, a, filename, s in rows]
         # 导出类型
         if type == 'json':
             import json
@@ -1309,8 +1411,11 @@ async def get_chunk_qa(segment_id: int):
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute("SELECT id, question, answer FROM qa_pairs WHERE segment_id=? ORDER BY id ASC", (segment_id,))
-        qa_list = [{"id": row[0], "question": row[1], "answer": row[2]} for row in c.fetchall()]
+        c.execute("SELECT id, question, answer, score FROM qa_pairs WHERE segment_id=? ORDER BY id ASC", (segment_id,))
+        qa_list = [
+            {"id": row[0], "question": row[1], "answer": row[2], "score": row[3]}
+            for row in c.fetchall()
+        ]
         conn.close()
         return {"status": "success", "data": qa_list, "count": len(qa_list)}
     except Exception as e:
@@ -1345,6 +1450,117 @@ async def delete_qa(qa_id: int):
         return {"status": "success"}
     except Exception as e:
         logger.error(f"删除问答对失败: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/qa-pairs/{qa_id}/score")
+async def get_qa_score(qa_id: int):
+    """获取单个问答对的评分"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT score FROM qa_pairs WHERE id=?", (qa_id,))
+        row = c.fetchone()
+        conn.close()
+        if row is not None:
+            return {"status": "success", "score": row[0]}
+        else:
+            return {"status": "error", "message": "问答对不存在"}
+    except Exception as e:
+        logger.error(f"获取评分失败: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/qa-pairs/{qa_id}/score")
+async def set_qa_score(qa_id: int, data: dict = Body(...)):
+    """人工评分接口，保存1-5分"""
+    try:
+        score = data.get("score")
+        if score is None or not (1 <= int(score) <= 5):
+            return {"status": "error", "message": "分数必须为1-5"}
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("UPDATE qa_pairs SET score=? WHERE id=?", (int(score), qa_id))
+        conn.commit()
+        conn.close()
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"人工评分失败: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/qa-pairs/auto-score")
+async def auto_score_qa_pairs(data: dict = Body(...)):
+    """自动评分接口，支持批量评分，调用外部评分API"""
+    try:
+        qa_ids = data.get("qa_ids", [])
+        if not qa_ids:
+            return {"status": "error", "message": "缺少问答对ID列表"}
+        # 获取评分模型参数
+        conn = get_db()
+        c = conn.cursor()
+        c.execute("SELECT score_api_url, score_api_key, score_model_name FROM settings LIMIT 1")
+        row = c.fetchone()
+        if not row:
+            return {"status": "error", "message": "未配置评分模型参数"}
+        score_api_url, score_api_key, score_model_name = row
+        # 获取所有问答对内容
+        c.execute(f"SELECT id, question, answer FROM qa_pairs WHERE id IN ({','.join(['?']*len(qa_ids))})", qa_ids)
+        qa_list = c.fetchall()
+        results = []
+        client = OpenAI(api_key=score_api_key, base_url=score_api_url)
+        for qa in qa_list:
+            qa_id, question, answer = qa
+            try:
+                response = client.chat.completions.create(
+                    model=score_model_name,
+                    messages=[
+                        {"role": "system", "content": "你是一个专业的评分助手，请根据提示词给出1-5分"},
+                        {"role": "user", "content": f"问题：{question}\n答案：{answer}\n请给出1-5分"}
+                    ],
+                    temperature=1,
+                    stream=False
+                )
+                score_str = response.choices[0].message.content.strip()
+                logger.info(f"评分返回内容(qa_id={qa_id}): {score_str}")
+                def extract_score(score_str):
+                    match = re.search(r'([1-5])', score_str)
+                    if match:
+                        return int(match.group(1))
+                    return None
+                score = extract_score(score_str)
+                if score is not None and 1 <= score <= 5:
+                    c.execute("UPDATE qa_pairs SET score=? WHERE id=?", (score, qa_id))
+                    results.append({"qa_id": qa_id, "score": score, "raw": score_str})
+                else:
+                    logger.warning(f"评分无效(qa_id={qa_id}): {score_str}")
+                    results.append({"qa_id": qa_id, "score": None, "error": f"评分无效: {score_str}", "raw": score_str})
+            except Exception as e:
+                logger.error(f"自动评分失败: {str(e)}")
+                results.append({"qa_id": qa_id, "score": None, "error": str(e)})
+        conn.commit()
+        conn.close()
+        return {"status": "success", "results": results}
+    except Exception as e:
+        logger.error(f"自动评分接口异常: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/chunks_delete")
+async def batch_delete_chunks(data: dict = Body(...)):
+    """批量删除分块及其问答对"""
+    try:
+        ids = data.get("ids", [])
+        if not ids:
+            return {"status": "error", "message": "缺少分块ID列表"}
+        conn = get_db()
+        c = conn.cursor()
+        for chunk_id in ids:
+            # 删除 qa_pairs 表中关联的问答对
+            c.execute("DELETE FROM qa_pairs WHERE segment_id = ?", (chunk_id,))
+            # 删除 text_segments 表中的分块
+            c.execute("DELETE FROM text_segments WHERE id = ?", (chunk_id,))
+        conn.commit()
+        conn.close()
+        return {"status": "success", "message": "批量删除完成"}
+    except Exception as e:
+        logger.error(f"批量删除分块失败: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":

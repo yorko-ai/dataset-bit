@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>问答对列表</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-light.css') }}" id="theme-style">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>问答对列表</h1>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="showAddModal()">添加问答对</button>
+                <button class="btn" onclick="batchEvaluate()">批量评估</button>
+                <button class="btn" onclick="showExportModal()">导出数据</button>
+                <select class="lang-select" onchange="changeLang(this.value)">
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                </select>
+                <select class="theme-select" onchange="changeTheme(this.value)">
+                    <option value="light">浅色主题</option>
+                    <option value="dark">深色主题</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="filterPanel"></div>
+        
+        <div id="scoreStats"></div>
+        
+        <div id="advancedCharts"></div>
+        
+        <div class="qa-list">
+            {% for qa in qa_pairs %}
+            <div class="qa-item" data-id="{{ qa.id }}">
+                <div class="qa-content">
+                    <div class="question">{{ qa.question }}</div>
+                    <div class="answer">{{ qa.answer }}</div>
+                    <div class="score-container">
+                        <div class="score-card"></div>
+                        <div class="chart-container"></div>
+                        <div class="buttons">
+                            <button class="btn" onclick="evaluateQA({{ qa.id }})">评估</button>
+                            <button class="btn" onclick="showScoreDetail({{ qa.id }})">详情</button>
+                            <button class="btn" onclick="editQA({{ qa.id }})">编辑</button>
+                            <button class="btn" onclick="deleteQA({{ qa.id }})">删除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- 导出模态框 -->
+    <div id="exportModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>导出数据</h2>
+                <button class="close-btn" onclick="hideExportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>导出格式</label>
+                    <select id="exportFormat" class="select">
+                        <option value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>评分筛选</label>
+                    <div class="score-filters">
+                        <div class="filter-item">
+                            <label>总分范围</label>
+                            <input type="number" id="minTotalScore" placeholder="最小分" step="0.1" min="0" max="100">
+                            <input type="number" id="maxTotalScore" placeholder="最大分" step="0.1" min="0" max="100">
+                        </div>
+                        <div class="filter-item">
+                            <label>最小准确性</label>
+                            <input type="number" id="minAccuracyScore" placeholder="最小分" step="0.1" min="0" max="100">
+                        </div>
+                        <div class="filter-item">
+                            <label>最小完整性</label>
+                            <input type="number" id="minCompletenessScore" placeholder="最小分" step="0.1" min="0" max="100">
+                        </div>
+                        <div class="filter-item">
+                            <label>最小相关性</label>
+                            <input type="number" id="minRelevanceScore" placeholder="最小分" step="0.1" min="0" max="100">
+                        </div>
+                        <div class="filter-item">
+                            <label>最小清晰度</label>
+                            <input type="number" id="minClarityScore" placeholder="最小分" step="0.1" min="0" max="100">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>日期范围</label>
+                    <div class="date-filters">
+                        <input type="date" id="startDate" placeholder="开始日期">
+                        <input type="date" id="endDate" placeholder="结束日期">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="hideExportModal()">取消</button>
+                <button class="btn btn-primary" onclick="exportData()">导出</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/components/ScoreCard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components/ScoreChart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components/ScoreDetailModal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components/ScoreStats.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components/FilterPanel.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/components/AdvancedCharts.js') }}"></script>
+    <script>
+        let currentLang = 'zh';
+        let currentTheme = 'light';
+        let scoreCards = {};
+        let scoreCharts = {};
+        let scoreDetailModal;
+        let scoreStats;
+        let advancedCharts;
+        
+        // 初始化组件
+        const filterPanel = new FilterPanel(document.getElementById('filterPanel'), {
+            lang: 'zh',
+            theme: 'light',
+            onFilterChange: async (conditions) => {
+                try {
+                    const params = new URLSearchParams();
+                    Object.entries(conditions).forEach(([key, value]) => {
+                        if (value !== null && value !== '') {
+                            params.append(key, value);
+                        }
+                    });
+                    
+                    const response = await fetch(`/api/qa-pairs/filter?${params.toString()}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        updateQAList(data.data);
+                        advancedCharts.updateData(data.data);
+                    } else {
+                        alert('获取筛选结果失败');
+                    }
+                } catch (error) {
+                    console.error('筛选失败:', error);
+                    alert('筛选失败');
+                }
+            },
+            onSaveFilter: async (name, conditions) => {
+                try {
+                    const response = await fetch('/api/filters', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name,
+                            conditions
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('保存成功');
+                    } else {
+                        alert('保存失败');
+                    }
+                } catch (error) {
+                    console.error('保存筛选条件失败:', error);
+                    alert('保存失败');
+                }
+            },
+            onLoadFilter: async (filterId) => {
+                try {
+                    const response = await fetch(`/api/qa-pairs/filter?filter_id=${filterId}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        updateQAList(data.data);
+                        advancedCharts.updateData(data.data);
+                    } else {
+                        alert('加载筛选结果失败');
+                    }
+                } catch (error) {
+                    console.error('加载筛选结果失败:', error);
+                    alert('加载失败');
+                }
+            }
+        });
+        
+        // 初始化高级图表
+        advancedCharts = new AdvancedCharts(document.getElementById('advancedCharts'), {
+            lang: 'zh',
+            theme: 'light'
+        });
+        
+        // 更新问答列表
+        function updateQAList(qaPairs) {
+            const qaList = document.querySelector('.qa-list');
+            qaList.innerHTML = qaPairs.map(qa => `
+                <div class="qa-item" data-id="${qa.id}">
+                    <div class="qa-content">
+                        <div class="question">${qa.question}</div>
+                        <div class="answer">${qa.answer}</div>
+                        <div class="score-container">
+                            <div class="score-card"></div>
+                            <div class="chart-container"></div>
+                            <div class="buttons">
+                                <button class="btn" onclick="evaluateQA(${qa.id})">评估</button>
+                                <button class="btn" onclick="showScoreDetail(${qa.id})">详情</button>
+                                <button class="btn" onclick="editQA(${qa.id})">编辑</button>
+                                <button class="btn" onclick="deleteQA(${qa.id})">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // 重新初始化评分卡片和图表
+            qaPairs.forEach(qa => {
+                const container = document.querySelector(`.qa-item[data-id="${qa.id}"]`);
+                new ScoreCard(container.querySelector('.score-card'), {
+                    scores: {
+                        accuracy: qa.accuracy_score,
+                        completeness: qa.completeness_score,
+                        relevance: qa.relevance_score,
+                        clarity: qa.clarity_score,
+                        total: qa.total_score
+                    },
+                    lang: 'zh',
+                    theme: 'light'
+                });
+                
+                new ScoreChart(container.querySelector('.chart-container'), {
+                    scores: {
+                        accuracy: qa.accuracy_score,
+                        completeness: qa.completeness_score,
+                        relevance: qa.relevance_score,
+                        clarity: qa.clarity_score,
+                        total: qa.total_score
+                    },
+                    lang: 'zh',
+                    theme: 'light'
+                });
+            });
+        }
+        
+        // 加载评分历史
+        async function loadScoreHistory() {
+            try {
+                const response = await fetch('/api/qa-pairs/history');
+                const data = await response.json();
+                
+                if (data.success) {
+                    scoreStats.updateData(data.data);
+                    advancedCharts.updateData(data.data);
+                }
+            } catch (error) {
+                console.error('加载评分历史失败:', error);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            scoreDetailModal = new ScoreDetailModal(document.body, {
+                lang: currentLang,
+                theme: currentTheme
+            });
+            
+            scoreStats = new ScoreStats(document.getElementById('scoreStats'), {
+                lang: currentLang,
+                theme: currentTheme
+            });
+            
+            advancedCharts = new AdvancedCharts(document.getElementById('advancedCharts'), {
+                lang: currentLang,
+                theme: currentTheme
+            });
+            
+            // 初始化评分卡片和图表
+            document.querySelectorAll('.qa-item').forEach(item => {
+                const qaId = item.dataset.id;
+                const scoreContainer = item.querySelector('.score-container');
+                const chartContainer = item.querySelector('.chart-container');
+                
+                scoreCards[qaId] = new ScoreCard(scoreContainer, {
+                    lang: currentLang,
+                    theme: currentTheme
+                });
+                
+                scoreCharts[qaId] = new ScoreChart(chartContainer, {
+                    lang: currentLang,
+                    theme: currentTheme,
+                    chartType: 'radar'
+                });
+                
+                loadScores(qaId);
+            });
+            
+            // 加载所有问答对的评分历史
+            loadAllScores();
+        });
+        
+        // 加载所有问答对的评分历史
+        async function loadAllScores() {
+            try {
+                const response = await fetch(`/api/qa-pairs/history?lang=${currentLang}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    scoreStats.updateData(data.data);
+                    advancedCharts.updateData(data.data);
+                }
+            } catch (error) {
+                console.error('加载评分历史失败:', error);
+            }
+        }
+        
+        // 加载评分
+        async function loadScores(qaId) {
+            try {
+                const response = await fetch(`/api/qa-pairs/${qaId}/scores?lang=${currentLang}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    scoreCards[qaId].updateScores(data.data);
+                    scoreCharts[qaId].updateScores(data.data);
+                }
+            } catch (error) {
+                console.error('加载评分失败:', error);
+            }
+        }
+        
+        // 评估问答对
+        async function evaluateQA(qaId) {
+            try {
+                const response = await fetch(`/api/qa-pairs/${qaId}/evaluate?lang=${currentLang}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    scoreCards[qaId].updateScores(data.data);
+                    scoreCharts[qaId].updateScores(data.data);
+                    loadAllScores(); // 更新统计图表
+                }
+            } catch (error) {
+                console.error('评估失败:', error);
+            }
+        }
+        
+        // 批量评估
+        async function batchEvaluate() {
+            try {
+                const response = await fetch(`/api/qa-pairs/batch-evaluate?lang=${currentLang}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    data.data.forEach(result => {
+                        const qaId = result.qa_id;
+                        scoreCards[qaId].updateScores(result.scores);
+                        scoreCharts[qaId].updateScores(result.scores);
+                    });
+                    loadAllScores(); // 更新统计图表
+                }
+            } catch (error) {
+                console.error('批量评估失败:', error);
+            }
+        }
+        
+        // 显示评分详情
+        async function showScoreDetail(qaId) {
+            try {
+                const [scoresResponse, historyResponse] = await Promise.all([
+                    fetch(`/api/qa-pairs/${qaId}/scores?lang=${currentLang}`),
+                    fetch(`/api/qa-pairs/${qaId}/history?lang=${currentLang}`)
+                ]);
+                
+                const scoresData = await scoresResponse.json();
+                const historyData = await historyResponse.json();
+                
+                if (scoresData.status === 'success' && historyData.status === 'success') {
+                    scoreDetailModal.show(scoresData.data, historyData.data);
+                }
+            } catch (error) {
+                console.error('加载评分详情失败:', error);
+            }
+        }
+        
+        // 切换语言
+        function changeLang(lang) {
+            currentLang = lang;
+            
+            // 更新评分卡片
+            Object.values(scoreCards).forEach(card => {
+                card.updateLang(lang);
+            });
+            
+            // 更新评分图表
+            Object.values(scoreCharts).forEach(chart => {
+                chart.updateLang(lang);
+            });
+            
+            // 更新评分详情模态框
+            scoreDetailModal.updateLang(lang);
+            
+            // 更新评分统计
+            scoreStats.updateLang(lang);
+            
+            // 更新筛选面板
+            filterPanel.updateLang(lang);
+            
+            // 更新高级图表
+            advancedCharts.updateLang(lang);
+        }
+        
+        // 切换主题
+        function changeTheme(theme) {
+            currentTheme = theme;
+            document.getElementById('theme-style').href = `/static/css/theme-${theme}.css`;
+            
+            // 更新评分卡片
+            Object.values(scoreCards).forEach(card => {
+                card.updateTheme(theme);
+            });
+            
+            // 更新评分图表
+            Object.values(scoreCharts).forEach(chart => {
+                chart.updateTheme(theme);
+            });
+            
+            // 更新评分详情模态框
+            scoreDetailModal.updateTheme(theme);
+            
+            // 更新评分统计
+            scoreStats.updateTheme(theme);
+            
+            // 更新筛选面板
+            filterPanel.updateTheme(theme);
+            
+            // 更新高级图表
+            advancedCharts.updateTheme(theme);
+        }
+        
+        // 显示导出模态框
+        function showExportModal() {
+            document.getElementById('exportModal').style.display = 'block';
+        }
+        
+        // 隐藏导出模态框
+        function hideExportModal() {
+            document.getElementById('exportModal').style.display = 'none';
+        }
+        
+        // 导出数据
+        function exportData() {
+            const format = document.getElementById('exportFormat').value;
+            const minTotalScore = document.getElementById('minTotalScore').value;
+            const maxTotalScore = document.getElementById('maxTotalScore').value;
+            const minAccuracyScore = document.getElementById('minAccuracyScore').value;
+            const minCompletenessScore = document.getElementById('minCompletenessScore').value;
+            const minRelevanceScore = document.getElementById('minRelevanceScore').value;
+            const minClarityScore = document.getElementById('minClarityScore').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            // 构建查询参数
+            const params = new URLSearchParams({
+                format: format,
+                lang: currentLang
+            });
+            
+            if (minTotalScore) params.append('min_total_score', minTotalScore);
+            if (maxTotalScore) params.append('max_total_score', maxTotalScore);
+            if (minAccuracyScore) params.append('min_accuracy_score', minAccuracyScore);
+            if (minCompletenessScore) params.append('min_completeness_score', minCompletenessScore);
+            if (minRelevanceScore) params.append('min_relevance_score', minRelevanceScore);
+            if (minClarityScore) params.append('min_clarity_score', minClarityScore);
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            
+            // 发起导出请求
+            window.location.href = `/api/qa-pairs/export?${params.toString()}`;
+            
+            // 隐藏模态框
+            hideExportModal();
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('exportModal');
+            if (event.target == modal) {
+                hideExportModal();
+            }
+        }
+    </script>
+</body>
+</html> 

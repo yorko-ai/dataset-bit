@@ -28,39 +28,48 @@
         margin-bottom: 8px;
         color: #666;
     }
-    .settings-item input, .settings-item select {
+    .input {
         width: 100%;
         max-width: 400px;
         padding: 8px;
         border: 1px solid #ddd;
         border-radius: 4px;
     }
-    .btn-save {
+    .select {
+        width: 100%;
+        max-width: 400px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .btn {
+        padding: 10px 24px;
+        border-radius: 4px;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        margin-right: 8px;
+        transition: background 0.2s;
+    }
+    .btn-primary {
         background: #409EFF;
         color: #fff;
-        border: none;
-        padding: 10px 24px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background 0.2s;
     }
-    .btn-save:hover {
+    .btn-primary:hover {
         background: #337ecc;
     }
-    .btn-test {
+    .btn-success {
         background: #67C23A;
         color: #fff;
-        border: none;
-        padding: 10px 24px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background 0.2s;
-        margin-left: 12px;
     }
-    .btn-test:hover {
+    .btn-success:hover {
         background: #529b2e;
+    }
+    .lang-select {
+        margin-left: 16px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
     }
     .error-tip { color: #e74c3c; margin: 20px 0; text-align: center; }
     .loading-tip { color: #409EFF; margin: 20px 0; text-align: center; }
@@ -100,6 +109,30 @@
         color: #222 !important;
         border-color: #ddd !important;
     }
+    .settings-row {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+    .settings-col {
+        flex: 1 1 320px;
+        min-width: 300px;
+        max-width: 380px;
+    }
+    .input {
+        width: 100%;
+        max-width: 300px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .select {
+        width: 100%;
+        max-width: 300px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
 </style>
 {% endblock %}
 
@@ -116,47 +149,65 @@ window._lang = "{{ lang }}";
         <div v-if="loading" class="loading-tip">{{ t['loading'] }}</div>
         <div v-else>
             <div class="settings-container">
-                <div class="settings-group">
-                    <h3>{{ t['api_settings'] }}</h3>
-                    <div class="settings-item">
-                        <label>{{ t['api_base'] }}:</label>
-                        <input type="text" v-model="api_base" :placeholder="t['api_base_placeholder']">
-                    </div>
-                    <div class="settings-item">
-                        <label>{{ t['api_key'] }}:</label>
-                        <div style="display:flex;align-items:center;">
-                            <input :type="showKey ? 'text' : 'password'" v-model="api_key" :placeholder="t['api_key_placeholder']">
-                            <span @click="showKey = !showKey" style="margin-left:8px;cursor:pointer;">
-                                <el-icon><View v-if="showKey"/><Hide v-else/></el-icon>
-                            </span>
+                <div class="settings-row">
+                    <div class="settings-group settings-col">
+                        <h3 v-text="t['qa_model_settings']"></h3>
+                        <div class="settings-item">
+                            <label v-text="t['api_base'] + ':'"></label>
+                            <input type="text" v-model="api_base" :placeholder="t['api_base_placeholder']" class="input">
                         </div>
+                        <div class="settings-item">
+                            <label v-text="t['api_key'] + ':'"></label>
+                            <div style="display:flex;align-items:center;">
+                                <input :type="showKey ? 'text' : 'password'" v-model="api_key" :placeholder="t['api_key_placeholder']" class="input">
+                                <span @click="showKey = !showKey" style="margin-left:8px;cursor:pointer;">
+                                    <el-icon><View v-if="showKey"/><Hide v-else/></el-icon>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <label v-text="t['model_name'] + ':'"></label>
+                            <input type="text" v-model="model_name" :placeholder="t['model_name_placeholder']" class="input">
+                        </div>
+                        <button class="btn btn-success" type="button" @click="testConn('qa')" :disabled="loading" v-text="t['test_connection']"></button>
                     </div>
-                    <div class="settings-item">
-                        <label>{{ t['model_name'] }}:</label>
-                        <input type="text" v-model="model_name" :placeholder="t['model_name_placeholder']">
+                    <div class="settings-group settings-col">
+                        <h3 v-text="t['score_model_settings']"></h3>
+                        <div class="settings-item">
+                            <label v-text="t['score_api_url'] + ':'"></label>
+                            <input type="text" v-model="score_api_url" :placeholder="t['score_api_url_placeholder']" class="input">
+                        </div>
+                        <div class="settings-item">
+                            <label v-text="t['score_api_key'] + ':'"></label>
+                            <input type="text" v-model="score_api_key" :placeholder="t['score_api_key_placeholder']" class="input">
+                        </div>
+                        <div class="settings-item">
+                            <label v-text="t['score_model_name'] + ':'"></label>
+                            <input type="text" v-model="score_model_name" :placeholder="t['score_model_name_placeholder']" class="input">
+                        </div>
+                        <button class="btn btn-success" type="button" @click="testConn('score')" :disabled="loading" v-text="t['test_connection']"></button>
                     </div>
                 </div>
                 <div class="settings-group">
-                    <h3>{{ t['interface_settings'] }}</h3>
+                    <h3 v-text="t['interface_settings']"></h3>
                     <div class="settings-item">
-                        <label>{{ t['language'] }}:</label>
+                        <label v-text="t['language'] + ':'"></label>
                         <select v-model="language" class="select">
-                            <option value="zh">{{ t['language'] == '语言' ? '简体中文' : 'Chinese' }}</option>
-                            <option value="en">{{ t['language'] == '语言' ? 'English' : '英文' }}</option>
+                            <option value="zh" v-text="t['lang_zh']"></option>
+                            <option value="en" v-text="t['lang_en']"></option>
                         </select>
                     </div>
                     <div class="settings-item">
-                        <label>{{ t['theme'] }}:</label>
+                        <label v-text="t['theme'] + ':'"></label>
                         <select v-model="theme" class="select">
-                            <option value="light">{{ t['theme_light'] }}</option>
-                            <option value="dark">{{ t['theme_dark'] }}</option>
+                            <option value="light" v-text="t['theme_light']"></option>
+                            <option value="dark" v-text="t['theme_dark']"></option>
                         </select>
                     </div>
                 </div>
             </div>
             <div style="margin-top:32px;text-align:center;">
-                <button class="btn-save" type="button" @click="save" :disabled="loading">{{ t['save'] }}</button>
-                <button class="btn-test" type="button" @click="testConn" :disabled="loading">{{ t['test_connection'] }}</button>
+                <button class="btn btn-primary" type="button" @click="save" :disabled="loading" v-text="t['save']"></button>
             </div>
         </div>
     </div>
@@ -171,11 +222,30 @@ createApp({
         const api_base = ref('')
         const api_key = ref('')
         const model_name = ref('')
-        const language = ref('zh')
+        const score_api_url = ref('')
+        const score_api_key = ref('')
+        const score_model_name = ref('')
+        const language = ref(window._lang || 'zh')
         const theme = ref('light')
         const loading = ref(true)
         const error = ref("")
         const showKey = ref(false)
+
+        // 校验函数
+        const validate = (type) => {
+            if (type === 'qa') {
+                if (!api_base.value) return t['api_base_placeholder'];
+                if (!/^https?:\/\/.+/.test(api_base.value)) return t['api_base_placeholder'];
+                if (!api_key.value) return t['api_key_placeholder'];
+                if (!model_name.value) return t['model_name_placeholder'];
+            } else if (type === 'score') {
+                if (!score_api_url.value) return t['score_api_url_placeholder'];
+                if (!/^https?:\/\/.+/.test(score_api_url.value)) return t['score_api_url_placeholder'];
+                if (!score_api_key.value) return t['score_api_key_placeholder'];
+                if (!score_model_name.value) return t['score_model_name_placeholder'];
+            }
+            return '';
+        };
 
         const fetchSettings = async () => {
             loading.value = true;
@@ -188,6 +258,9 @@ createApp({
                     api_base.value = data.data.api_base || ''
                     api_key.value = data.data.api_key || ''
                     model_name.value = data.data.model_name || ''
+                    score_api_url.value = data.data.score_api_url || ''
+                    score_api_key.value = data.data.score_api_key || ''
+                    score_model_name.value = data.data.score_model_name || ''
                     language.value = data.data.language || 'zh'
                     theme.value = data.data.theme || 'light'
                 }
@@ -199,6 +272,16 @@ createApp({
         }
 
         const save = async () => {
+            const errMsgQa = validate('qa');
+            const errMsgScore = validate('score');
+            if (errMsgQa) {
+                ElementPlus.ElMessageBox.alert(errMsgQa, t['alert_title'], {type:'error'});
+                return;
+            }
+            if (errMsgScore) {
+                ElementPlus.ElMessageBox.alert(errMsgScore, t['alert_title'], {type:'error'});
+                return;
+            }
             loading.value = true
             try {
                 const resp = await fetch('/api/settings', {
@@ -208,6 +291,9 @@ createApp({
                         api_base: api_base.value,
                         api_key: api_key.value,
                         model_name: model_name.value,
+                        score_api_url: score_api_url.value,
+                        score_api_key: score_api_key.value,
+                        score_model_name: score_model_name.value,
                         language: language.value,
                         theme: theme.value
                     })
@@ -227,16 +313,24 @@ createApp({
             }
         }
 
-        const testConn = async () => {
+        const testConn = async (type) => {
+            const errMsg = validate(type);
+            if (errMsg) {
+                ElementPlus.ElMessageBox.alert(errMsg, t['alert_title'], {type:'error'});
+                return;
+            }
             ElementPlus.ElMessage.info(t['testing'] || '正在连接...');
+            let url = type === 'score' ? score_api_url.value : api_base.value;
+            let key = type === 'score' ? score_api_key.value : api_key.value;
+            let model = type === 'score' ? score_model_name.value : model_name.value;
             try {
                 const resp = await fetch('/api/settings/test', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        api_base: api_base.value,
-                        api_key: api_key.value,
-                        model_name: model_name.value
+                        api_base: url,
+                        api_key: key,
+                        model_name: model
                     })
                 })
                 const data = await resp.json()
@@ -260,6 +354,12 @@ createApp({
             }
         }
 
+        const changeLang = () => {
+            document.cookie = "lang=" + language.value + "; path=/";
+            let url = window.location.pathname + '?lang=' + language.value;
+            window.location.href = url;
+        }
+
         watch(theme, (newTheme) => {
             document.cookie = "theme=" + newTheme + "; path=/";
             applyTheme(newTheme);
@@ -276,13 +376,17 @@ createApp({
             api_base,
             api_key,
             model_name,
+            score_api_url,
+            score_api_key,
+            score_model_name,
             language,
             theme,
             loading,
             error,
             showKey,
             save,
-            testConn
+            testConn,
+            changeLang
         }
     }
 }).use(ElementPlus).mount('#app')

@@ -13,6 +13,12 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    .chunk-content.full {
+        max-width: 100%;
+        overflow: visible;
+        text-overflow: initial;
+        white-space: pre-wrap;
+    }
     .btn {
         padding: 6px 16px;
         border: none;
@@ -29,6 +35,37 @@
     .btn-danger:hover { background: #c0392b; }
     .error-tip { color: #e74c3c; margin: 20px 0; text-align: center; }
     .loading-tip { color: #409EFF; margin: 20px 0; text-align: center; }
+    .star-rating {
+        display: flex;
+        align-items: center;
+        margin-top: 4px;
+    }
+    .star {
+        font-size: 20px;
+        color: #FFD700 !important; /* 高亮金色 */
+        cursor: pointer;
+        margin-right: 2px;
+        transition: color 0.2s;
+        text-shadow: 0 0 4px #222, 0 0 2px #fff;
+    }
+    .star.inactive {
+        color: #444 !important; /* 深灰色，深色主题下对比明显 */
+        opacity: 0.5;
+        text-shadow: none;
+    }
+    .star-rating .score-label {
+        margin-left: 8px;
+        color: #888;
+        font-size: 13px;
+    }
+    .btn-model-score {
+        background: #67C23A;
+        color: #fff;
+        margin-right: 8px;
+    }
+    .btn-model-score:hover {
+        background: #529b2e;
+    }
 </style>
 {% endblock %}
 
@@ -44,8 +81,14 @@ window._lang = "{{ lang }}";
     <div v-else>
         <div v-if="loading" class="loading-tip">{{ t['loading'] }}</div>
         <div v-else>
-            <div style="margin-bottom: 16px;">
+            <div style="margin: 16px 0;display:flex;align-items:center;">
+                <span style="margin-right:8px;">{{ t['generate_qa_count'] }}</span>
+                <input v-model="qaNum" type="number" min="1" max="20" :placeholder="t['generate_qa_count']" style="width:160px; margin-right:12px;" />
+                <button class="btn" @click="generateQA" :disabled="selectedChunks.length===0 || !qaNum || generating">{{ t['model_generate'] || '模型生成' }}</button>
+                <button class="btn btn-model-score" @click="batchModelScore" :disabled="!selectedChunks.length">{{ t['model_score'] || '模型评分' }}</button>
                 <button class="btn" @click="batchDelete" :disabled="!selectedChunks.length">{{ t['batch_delete'] }}</button>
+                <el-progress v-if="generating" :percentage="progress" style="width:200px;display:inline-block;margin-left:16px;vertical-align:middle;" :stroke-width="16" status="active"></el-progress>
+                <el-progress v-if="scoring" :percentage="scoreProgress" style="width:200px;display:inline-block;margin-left:16px;vertical-align:middle;" :stroke-width="16" status="active"></el-progress>
             </div>
             <div class="file-select">
                 <el-select v-model="selectedFileId" :placeholder="t['select_file']" @change="fetchChunks">
@@ -57,20 +100,14 @@ window._lang = "{{ lang }}";
                     </el-option>
                 </el-select>
             </div>
-            <div style="margin: 16px 0;display:flex;align-items:center;">
-                <span style="margin-right:8px;">{{ t['generate_qa_count'] }}</span>
-                <input v-model="qaNum" type="number" min="1" max="20" :placeholder="t['generate_qa_count']" style="width:160px; margin-right:12px;" />
-                <button class="btn" @click="generateQA" :disabled="selectedChunks.length===0 || !qaNum || generating">{{ t['generate_by_llm'] }}</button>
-                <el-progress v-if="generating" :percentage="progress" style="width:200px;display:inline-block;margin-left:16px;vertical-align:middle;" :stroke-width="16" status="active"></el-progress>
-            </div>
             <el-table v-if="chunks.length > 0" :data="chunks" style="width: 100%" @selection-change="handleSelectionChange" ref="chunkTable">
                 <el-table-column type="selection" width="48"></el-table-column>
                 <el-table-column :label="t['chunk_content']" width="900">
                     <template v-slot="scope">
                         <div style="display:flex;align-items:center;">
-                            <span style="font-weight:bold;color:#409EFF;margin-right:8px;">[{{ scope.row.qa_count || 0 }}{{ t['qa_count'] }}]</span>
-                            <div class="chunk-content" :title="scope.row.full_content" style="flex:1;cursor:pointer;" @click="toggleQA(scope.row)">
-                                {{ scope.row.content }}
+                            <span style="color:#409EFF;margin-right:8px;">[{{ scope.row.qa_count || 0 }}]</span>
+                            <div class="chunk-content" :class="{full: scope.row.showQA}" :title="scope.row.full_content" style="flex:1;cursor:pointer;" @click="toggleQA(scope.row)">
+                                {{ scope.row.showQA ? scope.row.full_content : scope.row.content }}
                             </div>
                         </div>
                         <div v-if="scope.row.showQA" class="qa-theme" style="background:#f7f8fa;padding:12px 18px 8px 18px;margin-top:8px;border-radius:6px;">
@@ -78,14 +115,21 @@ window._lang = "{{ lang }}";
                             <div v-else-if="scope.row.qaList && scope.row.qaList.length">
                                 <div v-for="(qa, idx) in scope.row.qaList" :key="idx" style="margin-bottom:10px;">
                                     <div style="font-weight:bold;display:flex;align-items:center;">
-                                        <span v-if="!qa.editing">Q: {{ qa.question }}</span>
-                                        <input v-else v-model="qa.editQ" @blur="saveQA(scope.row, qa, idx)" style="flex:1;margin-right:8px;" />
-                                        <span style="margin-left:8px;cursor:pointer;color:#409EFF;" @click="editQA(qa)">[{{ t['edit'] }}]</span>
-                                        <span style="margin-left:8px;cursor:pointer;color:#e74c3c;" @click="deleteQA(scope.row, qa, idx)">[{{ t['delete'] }}]</span>
+                                        <el-icon style="cursor:pointer;color:#e74c3c;margin-right:6px;" @click="deleteQA(scope.row, qa, idx)"><Delete /></el-icon>
+                                        <span v-if="!qa.editingQ" @click="editQ(qa)">Q: {{ qa.question }}</span>
+                                        <input v-else v-model="qa.editQ" @blur="saveQ(scope.row, qa, idx)" @keyup.enter="saveQ(scope.row, qa, idx)" style="flex:1;margin-right:8px;" />
                                     </div>
                                     <div style="margin-left:18px;">
-                                        <span v-if="!qa.editing">A: {{ qa.answer }}</span>
-                                        <input v-else v-model="qa.editA" @blur="saveQA(scope.row, qa, idx)" style="width:90%;" />
+                                        <span v-if="!qa.editingA" @click="editA(qa)">A: {{ qa.answer }}</span>
+                                        <input v-else v-model="qa.editA" @blur="saveA(scope.row, qa, idx)" @keyup.enter="saveA(scope.row, qa, idx)" style="width:90%;" />
+                                    </div>
+                                    <!-- 评分控件 -->
+                                    <div class="star-rating">
+                                        <span v-for="star in 5" :key="star" class="star" :class="{inactive: !qa.score || star > qa.score}" @click="setQAScore(qa, star)">
+                                            ★
+                                        </span>
+                                        <span class="score-label" v-if="qa.score">{{ qa.score }}/5</span>
+                                        <span class="score-label" v-else>{{ t['no_score'] || '未评分' }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -125,6 +169,7 @@ window._lang = "{{ lang }}";
 
 <script>
 const { createApp, ref, onMounted } = Vue
+const { Delete } = ElementPlusIconsVue
 
 createApp({
     setup() {
@@ -142,6 +187,8 @@ createApp({
         const progress = ref(0)
         const loading = ref(true)
         const error = ref("")
+        const scoring = ref(false)
+        const scoreProgress = ref(0)
 
         const truncate = (text, len = 350) => {
             if (!text) return '';
@@ -293,24 +340,45 @@ createApp({
             row.showQA = true;
         }
 
-        // 新增：编辑和删除问答对
-        const editQA = (qa) => {
-            qa.editing = true;
+        // 新增：Q/A点击可编辑
+        const editQ = (qa) => {
+            qa.editingQ = true;
             qa.editQ = qa.question;
-            qa.editA = qa.answer;
         }
-        const saveQA = async (row, qa, idx) => {
-            qa.editing = false;
+        const saveQ = async (row, qa, idx) => {
+            qa.editingQ = false;
             // 调用后端保存接口
             try {
                 const resp = await fetch(`/api/qa/${qa.id}/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: qa.editQ, answer: qa.editA })
+                    body: JSON.stringify({ question: qa.editQ, answer: qa.answer })
                 });
                 const data = await resp.json();
                 if (data.status === 'success') {
                     qa.question = qa.editQ;
+                } else {
+                    ElementPlus.ElMessage.error('保存失败');
+                }
+            } catch (e) {
+                ElementPlus.ElMessage.error('保存失败');
+            }
+        }
+        const editA = (qa) => {
+            qa.editingA = true;
+            qa.editA = qa.answer;
+        }
+        const saveA = async (row, qa, idx) => {
+            qa.editingA = false;
+            // 调用后端保存接口
+            try {
+                const resp = await fetch(`/api/qa/${qa.id}/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: qa.question, answer: qa.editA })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
                     qa.answer = qa.editA;
                 } else {
                     ElementPlus.ElMessage.error('保存失败');
@@ -376,6 +444,86 @@ createApp({
             }).catch(() => {});
         };
 
+        // 评分相关逻辑
+        const setQAScore = async (qa, score) => {
+            try {
+                const resp = await fetch(`/api/qa-pairs/${qa.id}/score`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ score })
+                });
+                const data = await resp.json();
+                if (data.status === 'success') {
+                    qa.score = score;
+                    ElementPlus.ElMessage.success(t['save_success']);
+                } else {
+                    ElementPlus.ElMessage.error(data.message || t['save_fail']);
+                }
+            } catch (e) {
+                ElementPlus.ElMessage.error(t['save_fail']);
+            }
+        };
+        // 批量模型评分
+        const batchModelScore = async () => {
+            if (!selectedChunks.value.length) return;
+            // 收集所有分块下的问答对ID
+            let qaIds = [];
+            for (const chunk of selectedChunks.value) {
+                if (chunk.qaList && chunk.qaList.length) {
+                    qaIds.push(...chunk.qaList.map(q => q.id));
+                } else {
+                    // 若未加载，需请求
+                    try {
+                        const resp = await fetch(`/api/chunks/${chunk.id}/qa`);
+                        const data = await resp.json();
+                        if (data.status === 'success') {
+                            qaIds.push(...data.data.map(q => q.id));
+                        }
+                    } catch (e) {}
+                }
+            }
+            if (!qaIds.length) {
+                ElementPlus.ElMessage.warning(t['no_qa_pairs'] || '无问答对可评分');
+                return;
+            }
+            scoring.value = true;
+            scoreProgress.value = 0;
+            // 模拟进度条
+            const timer = setInterval(() => {
+                if (scoreProgress.value < 90) scoreProgress.value += 5;
+            }, 300);
+            ElementPlus.ElMessage.info(t['testing'] || '正在评分...');
+            try {
+                const resp = await fetch('/api/qa-pairs/auto-score', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ qa_ids: qaIds })
+                });
+                const data = await resp.json();
+                clearInterval(timer);
+                scoreProgress.value = 100;
+                scoring.value = false;
+                if (data.status === 'success') {
+                    ElementPlus.ElMessage.success(t['save_success']);
+                    // 刷新分数
+                    for (const chunk of selectedChunks.value) {
+                        if (chunk.qaList && chunk.qaList.length) {
+                            for (const qa of chunk.qaList) {
+                                const found = data.results.find(r => r.qa_id === qa.id);
+                                if (found && found.score) qa.score = found.score;
+                            }
+                        }
+                    }
+                } else {
+                    ElementPlus.ElMessage.error(data.message || t['save_fail']);
+                }
+            } catch (e) {
+                clearInterval(timer);
+                scoring.value = false;
+                ElementPlus.ElMessage.error(t['save_fail']);
+            }
+        };
+
         onMounted(() => {
             fetchFiles()
         })
@@ -401,15 +549,23 @@ createApp({
             progress,
             truncate,
             toggleQA,
-            editQA,
-            saveQA,
+            editQ,
+            saveQ,
+            editA,
+            saveA,
             deleteQA,
             batchDelete,
             loading,
-            error
+            error,
+            setQAScore,
+            batchModelScore,
+            scoring,
+            scoreProgress
         }
     }
-}).use(ElementPlus).mount('#app')
+}).use(ElementPlus)
+.component('Delete', Delete)
+.mount('#app')
 </script>
 {% endraw %}
 {% endblock %} 

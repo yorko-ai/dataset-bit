@@ -44,12 +44,31 @@ class Database:
         c.execute('''
             CREATE TABLE IF NOT EXISTS qa_pairs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                segment_id INTEGER,
                 question TEXT NOT NULL,
                 answer TEXT NOT NULL,
-                quality_score REAL DEFAULT 0,
-                created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (segment_id) REFERENCES segments (id)
+                accuracy_score REAL DEFAULT 0,
+                completeness_score REAL DEFAULT 0,
+                relevance_score REAL DEFAULT 0,
+                clarity_score REAL DEFAULT 0,
+                total_score REAL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # 创建评分历史记录表
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS score_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                qa_id INTEGER NOT NULL,
+                accuracy_score REAL NOT NULL,
+                completeness_score REAL NOT NULL,
+                relevance_score REAL NOT NULL,
+                clarity_score REAL NOT NULL,
+                total_score REAL NOT NULL,
+                feedback TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (qa_id) REFERENCES qa_pairs (id)
             )
         ''')
 
@@ -177,30 +196,39 @@ class Database:
         conn.close()
         return qa_pairs
 
-    def update_qa_quality(self, qa_id, quality_score):
+    def update_qa_scores(self, qa_id, scores):
+        """更新问答对评分"""
         conn = self.get_connection()
         c = conn.cursor()
+        
+        # 更新问答对表
         c.execute(
-            "UPDATE qa_pairs SET quality_score = ? WHERE id = ?",
-            (quality_score, qa_id)
+            "UPDATE qa_pairs SET accuracy_score = ?, completeness_score = ?, relevance_score = ?, clarity_score = ?, total_score = ?, updated_at = ? WHERE id = ?",
+            (scores['accuracy'], scores['completeness'], scores['relevance'], scores['clarity'], scores['total'], datetime.now().strftime('%Y-%m-%d %H:%M:%S'), qa_id)
         )
+        
+        # 添加评分历史记录
+        c.execute(
+            "INSERT INTO score_history (qa_id, accuracy_score, completeness_score, relevance_score, clarity_score, total_score, feedback) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (qa_id, scores['accuracy'], scores['completeness'], scores['relevance'], scores['clarity'], scores['total'], scores.get('feedback', ''))
+        )
+        
         conn.commit()
         conn.close()
 
-    def get_qa_stats(self):
+    def get_score_history(self, qa_id, limit=10):
+        """获取评分历史记录"""
         conn = self.get_connection()
         c = conn.cursor()
         c.execute("""
-            SELECT 
-                COUNT(*) as total_pairs,
-                AVG(quality_score) as avg_quality,
-                MIN(quality_score) as min_quality,
-                MAX(quality_score) as max_quality
-            FROM qa_pairs
-        """)
-        stats = dict(c.fetchone())
+            SELECT * FROM score_history 
+            WHERE qa_id = ? 
+            ORDER BY created_at DESC 
+            LIMIT ?
+        """, (qa_id, limit))
+        history = [dict(row) for row in c.fetchall()]
         conn.close()
-        return stats
+        return history
 
 # 添加create_tables函数
 def create_tables():

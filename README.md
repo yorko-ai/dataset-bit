@@ -1,265 +1,218 @@
 # Dataset-Bit 🚀
 
-
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100.0-green.svg)](https://fastapi.tiangolo.com/)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.3.0-brightgreen.svg)](https://vuejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Gitee Stars](https://gitee.com/yorkoliu/dataset-bit/badge/star.svg?theme=white)](https://gitee.com/yorkoliu/dataset-bit)
 
 [English](README_EN.md) | [中文](README.md)
 
+---
 
 ## 📖 项目简介
 
-Dataset-Bit 是一个强大的开源工具，专门用于生成和优化大型语言模型（LLM）的微调数据集。它能够智能地从各种文档中提取文本，生成高质量的问答对，并导出为标准的训练数据集格式。无论是开发者还是数据科学家，都可以使用 Dataset-Bit 来快速构建高质量的 LLM 训练数据。
+Dataset-Bit 是一款面向大语言模型（LLM）微调数据集构建的开源工具，支持从多种文档智能分块、自动/人工生成高质量问答对、灵活评分与筛选导出，适合开发者、数据标注团队和AI研究者。
 
-### ✨ 核心特性
+### ✨ 主要功能
+- **文档智能分块**：多格式文档上传，支持多种智能分块方式及参数自定义
+- **AI问答生成**：批量选中分块，自动生成高质量问答对，进度可视
+- **AI问答评分**：支持人工5星评分与批量AI自动评分，结果实时保存
+- **灵活数据导出**：支持Alpaca、ShareGPT等格式导出，按星级筛选高质量问答对
+- **灵活系统配置**：支持灵活的参数配置和自定义选项来满足个人性需求
 
-- 📚 **多格式支持**：支持 TXT、MD、DOCX、PDF 等多种文档格式
-- 🔍 **智能分割**：基于段落或标题的智能文本分割
-- 🤖 **AI 生成**：自动生成多样化、高质量的问题和答案
-- 📊 **质量评估**：内置问答对质量评估系统
-- 📦 **格式转换**：支持 Alpaca、ShareGPT 等多种数据集格式
-- 📈 **数据统计**：完整的文件管理和数据统计分析
-- 🔄 **批量处理**：支持批量文件处理和并行处理
-- 🎯 **自定义配置**：灵活的参数配置和自定义选项
+---
 
 ## 🛠️ 技术栈
+- **后端**：FastAPI + Python 3.8+ + SQLite
+- **前端**：Vue3 + Element Plus + 原生JS
+- **AI模型**：支持OpenAI/自定义API，评分与问答均可配置
 
-### 后端
-- **框架**：FastAPI
-- **语言**：Python 3.8+
-- **数据库**：SQLite
-- **AI 模型**：OpenAI GPT-3.5
-- **文档处理**：PyPDF2, python-docx, markdown
+---
 
-### 前端
-- **框架**：Vue.js 3
-- **UI 组件**：Element Plus
-- **状态管理**：Pinia
-- **HTTP 客户端**：Axios
+## 🚀 安装与启动
+1. 克隆仓库并进入目录
+   ```bash
+   git clone https://gitee.com/yorkoliu/dataset-bit.git
+   cd dataset-bit
+   ```
+2. 安装依赖
+   ```bash
+   python -m venv venv
+   # Windows
+   venv\Scripts\activate
+   # Linux/Mac
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+3. 初始化数据库
+   ```bash
+   sqlite3 dataset_bit.db < init_db.sql
+   ```
+4. 配置.env，填写API密钥
+5. 启动后端
+   ```bash
+   python main.py
+   ```
+6. 访问 http://localhost:8000
 
-## 🚀 快速开始
-
-### 系统要求
-- Python 3.8 或更高版本
-- 至少 4GB RAM
-- 稳定的网络连接
-
-### 数据库初始化
-本项目使用 SQLite 数据库。首次运行前请执行以下命令初始化数据库结构：
-
-```bash
-sqlite3 dataset_bit.db < init_db.sql
-```
-如无 sqlite3 命令行工具，也可通过 Python 脚本初始化，详见 `app/models/database.py`。
-
-### 安装步骤
-
-1. **克隆仓库**
-```bash
-git clone https://gitee.com/yorkoliu/dataset-bit.git
-cd dataset-bit
-```
-
-2. **设置 Python 环境**
-```bash
-# 创建虚拟环境
-python -m venv venv
-
-# 激活虚拟环境
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
-
-# 安装依赖
-pip install -r requirements.txt
-```
-
-3. **配置环境变量**
-```bash
-# 复制环境变量模板
-cp .env.example .env
-
-# 编辑 .env 文件，设置必要的配置
-# 特别是 OPENAI_API_KEY 和其他必要的 API 密钥
-```
-
-4. **启动服务**
-```bash
-# 启动后端服务
-python -m app.main
-```
-
-5. **访问应用**
-- 前端界面：http://localhost:8000
-- API 文档：http://localhost:8000/docs
-- 健康检查：http://localhost:8000/health
-
-## 📚 详细文档
-
-### API 接口
-
-#### 文件管理
-| 接口 | 方法 | 描述 |
-|------|------|------|
-| `/api/upload` | POST | 上传文件 |
-| `/api/files` | GET | 获取文件列表 |
-| `/api/files/{file_id}` | GET | 获取文件详情 |
-| `/api/files/{file_id}` | DELETE | 删除文件 |
-
-#### 文本处理
-| 接口 | 方法 | 描述 |
-|------|------|------|
-| `/api/process/{file_id}` | POST | 处理文件并生成问答对 |
-| `/api/segments/{segment_id}/qa` | GET | 获取问答对 |
-
-#### 数据导出
-| 接口 | 方法 | 描述 |
-|------|------|------|
-| `/api/export/{file_id}` | POST | 导出数据集 |
-| `/api/stats` | GET | 获取数据集统计信息 |
-
-### 配置参数
-
-#### 文本处理参数
-
-![file](frontend/static/file.png)
-
-```json
-{
-  "method": "auto",        // 分块方式：auto（智能递归分层）、heading（按标题）、paragraph（按段落）、table（按表格单元）
-  "block_size": 1000,      // 每块最大字符数（100-5000）
-  "overlap": 15            // 重叠率百分比（0-50）
-}
-```
+---
 
 ## 📁 项目结构
-
 ```
 dataset-bit/
-├── app/
-│   ├── main.py              # 主应用程序入口
-│   ├── routers/             # API 路由定义
-│   │   └── api.py
-│   ├── services/            # 业务服务层
-│   │   ├── file_service.py  # 文件处理服务
-│   │   ├── llm_service.py   # LLM 服务
-│   │   └── db_service.py    # 数据库服务
-│   ├── models/              # 数据模型
-│   │   └── database.py
-│   └── utils/               # 工具函数
-│       ├── batch_processor.py
-│       ├── file_handler.py
-│       └── quality_evaluator.py
-├── frontend/                # 前端代码
-│   ├── src/
-│   │   ├── components/      # Vue 组件
-│   │   ├── views/          # 页面视图
-│   │   ├── store/          # 状态管理
-│   │   └── api/            # API 调用
-│   └── public/             # 静态资源
-├── tests/                   # 测试用例
-├── uploads/                 # 上传文件目录
-├── exports/                 # 导出文件目录
-├── .env.example            # 环境变量示例
-├── requirements.txt        # Python 依赖
-└── README.md              # 项目说明
+├── app/                # 后端主程序
+│   ├── main.py         # FastAPI入口
+│   ├── ...
+├── frontend/           # 前端页面与静态资源
+│   └── templates/
+├── uploads/            # 上传文件目录
+├── exports/            # 导出文件目录
+├── init_db.sql         # 数据库结构
+├── requirements.txt    # 依赖
+└── README.md
 ```
 
-## 👥 开发指南
+---
 
-### 后端开发规范
-1. 遵循 PEP 8 编码规范
-2. 使用类型注解
-3. 编写单元测试（覆盖率 > 80%）
-4. 使用日志记录关键操作
-5. 使用异步编程处理 I/O 操作
+## 👨‍💻 开发指南
+- 后端：PEP8规范，类型注解，日志记录，异步I/O，单元测试
+- 前端：Vue3组合式API，组件化，TypeScript，响应式设计，ESLint
+- 贡献建议：Fork、分支开发、PR、附带测试
 
-### 前端开发规范
-1. 使用 Vue 3 组合式 API
-2. 遵循组件化开发原则
-3. 使用 TypeScript 进行类型检查
-4. 实现响应式设计
-5. 遵循 ESLint 规范
-
-## 🤝 贡献指南
-
-我们欢迎任何形式的贡献，包括但不限于：
-
-1. 提交问题和建议
-2. 改进文档
-3. 提交代码改进
-4. 分享使用经验
-
-### 贡献流程
-
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
-
-### 代码规范
-
-- 提交信息遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范
-- 代码变更需要包含相应的测试
-- 确保所有测试通过
-- 更新相关文档
+---
 
 ## 📝 更新日志
+### v1.0.1
+- 首次发布，支持文档分块、AI问答生成、评分、导出、批量操作等核心功能
 
-### v1.0.0 (2025-05-03)
-- 🎉 首次发布
-- ✨ 实现基础功能
-- 📚 支持多种文档格式
-- 🤖 集成 OpenAI GPT-3.5
-- 🎨 实现基础 UI 界面
+
+---
+
+## 🖼️ 系统界面预览
+- 数据集管理、分块管理、问答评分、导出等页面均支持批量操作与进度条，界面简洁美观。
+### 数据智能分块
+- ![数据集管理](frontend/static/file.png)
+### 数据集管理
+- ![数据集管理](frontend/static/dataset.png)
+### 数据集导出
+- ![导出选项](frontend/static/export.png)
+### 数据集格式(Alpaca)
+```
+[
+  {
+    "instruction": "What is the main purpose of the disclaimer mentioned in the text?",
+    "input": "",
+    "output": "The main purpose of the disclaimer is to inform readers that the document may contain references to products or services not available in all regions."
+  },
+  {
+    "instruction": "Can you provide an example of a situation where this disclaimer might be important?",
+    "input": "",
+    "output": "This disclaimer might be important if a reader from a specific region tries to access or purchase a product or service mentioned in the document but finds it unavailable in their area."
+  },
+  {
+    "instruction": "Is the document guaranteed to offer global availability for all its referenced products and services?",
+    "input": "",
+    "output": "No, the document explicitly states that not all products or services mentioned may be available globally."
+  },
+  {
+    "instruction": "How might this disclaimer affect a business's marketing strategy?",
+    "input": "",
+    "output": "The disclaimer could lead a business to adjust its marketing strategy by clearly indicating regional availability for certain products or services to manage customer expectations."
+  },
+  {
+    "instruction": "What should a user do if they encounter a product or service in this document that is unavailable in their region?",
+    "input": "",
+    "output": "If a user encounters a product or service unavailable in their region, they should consider exploring alternative options or contacting the provider for more information on potential future availability."
+  },
+  {
+    "instruction": "What is the book dedicated to?",
+    "input": "",
+    "output": "The book is dedicated to all children with Progeria."
+  }
+]
+```
+---
+
+## 📚 主要功能说明
+
+### 1. 文件管理
+- 支持多格式上传、删除、状态管理
+
+### 2. 分块管理
+- 智能分块（段落/标题/递归/表格）
+- 分块内容可展开查看全文
+- 支持批量选择、批量删除
+
+### 3. 问答对生成与管理
+- 选中分块后批量生成问答对，支持进度条
+- 问答对支持人工编辑、删除
+
+### 4. 评分系统
+- 每个问答对可人工1-5星评分，星星高亮
+- 支持批量自动评分，调用外部评分API，进度条实时反馈
+- 评分结果实时保存，支持多语言
+
+### 5. 数据导出
+- 支持Alpaca、ShareGPT等格式，JSON/CSV/Markdown多种类型
+- 导出时可按星级筛选（仅导出评分大于等于指定星级的问答对）
+
+### 6. 系统设置
+- 支持评分模型API参数配置、测试连接
+- 支持界面语言、主题切换
+
+### 7. UI与体验
+- 全局按钮、下拉框、评分控件等样式统一
+- 所有批量操作、进度条、弹窗均美观居中
+- 无需注册登录，开箱即用
+
+---
+
+## 🗄️ 数据库结构（简要）
+
+- **files**：文件信息
+- **text_segments**：分块内容
+- **qa_pairs**：问答对（含评分score字段）
+- **settings**：系统与API参数
+
+详见`init_db.sql`。
+
+---
+
+## 📑 API接口（部分）
+- `/api/upload` 上传文件
+- `/api/files` 获取文件列表
+- `/api/files/{file_id}/chunks` 获取分块
+- `/api/chunks/{segment_id}/qa` 获取分块下问答对
+- `/api/qa-pairs/{qa_id}/score` 获取/设置问答对评分
+- `/api/qa-pairs/auto-score` 批量自动评分
+- `/api/generate-qa` 批量生成问答对
+- `/api/datasets_export` 数据导出（支持星级筛选）
+- `/api/chunks_delete` 批量删除分块
+
+---
+
+## 📝 贡献与反馈
+- 欢迎提交issue、PR、建议
+- 详细开发规范、二次开发建议见代码注释与API文档
+
+---
 
 ## 📄 许可证
+MIT License，详见 LICENSE 文件
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+---
 
 ## 📞 联系方式
-
 - 作者：刘天斯 (York Liu)
 - 邮箱：liutiansi@gmail.com
-- 微信：yorkoliu
 - Gitee：[yorkoliu](https://gitee.com/yorkoliu)
-- 项目主页：[Dataset-Bit](https://gitee.com/yorkoliu/dataset-bit)
+
+---
 
 ## 🙏 致谢
-
-感谢所有为本项目做出贡献的开发者！
-
----
-
-<div align="center">
-  <sub>Built with ❤️ by <a href="https://gitee.com/yorkoliu">York Liu</a></sub>
-</div>
-
-## 系统界面预览
-
-### 1. 数据集管理界面
-![数据集管理](frontend/static/dataset.png)
-
-> 用于上传、管理和分块多种格式的数据文件，支持多语言切换和批量操作。
-
-### 2. 数据集导出界面
-![导出选项](frontend/static/export.png)
-
-> 支持多种格式（如Alpaca、ChatGLM等）导出问答对数据，参数灵活可选，界面风格统一。
-
-### 3. Alpaca数据集示例
-![Alpaca格式](frontend/static/alpaca.png)
-
-> 展示Alpaca格式数据的问答对内容，支持分页、批量操作和多语言切换。
+感谢所有为本项目做出贡献的开发者和用户！
 
 ---
 
-## 其它说明
-- 所有界面均支持深色/浅色主题切换，UI风格高度统一。
-- 支持多语言（中英文）一键切换，所有提示、按钮、表头等均多语言化。
-- 详见下方功能说明与使用方法。
+
+如需英文文档，请参见 [README_EN.md]

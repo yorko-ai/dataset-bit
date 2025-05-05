@@ -59,20 +59,33 @@
     <div class="dialog-content">
         <h3>{{ t['export_params'] }}</h3>
         <div style="margin:20px 0;">
-            <div style="margin-bottom:12px;">
-                <label>{{ t['export_format'] }}:</label>
-                <select id="exportFormat" class="select" style="margin-left:8px;">
-                    <option value="alpaca">Alpaca</option>
-                    <option value="chatglm">ChatGLM</option>
-                </select>
-            </div>
-            <div>
-                <label>{{ t['export_type'] }}:</label>
-                <select id="exportType" class="select" style="margin-left:8px;">
-                    <option value="json">JSON</option>
-                    <option value="csv">CSV</option>
-                    <option value="md">Markdown</option>
-                </select>
+            <div style="display:flex;align-items:center;gap:24px;">
+                <div>
+                    <label>{{ t['export_format'] }}:</label>
+                    <select id="exportFormat" class="select" style="margin-left:8px;">
+                        <option value="alpaca">Alpaca</option>
+                        <option value="chatglm">ChatGLM</option>
+                    </select>
+                </div>
+                <div>
+                    <label>{{ t['export_type'] }}:</label>
+                    <select id="exportType" class="select" style="margin-left:8px;">
+                        <option value="json">JSON</option>
+                        <option value="csv">CSV</option>
+                        <option value="md">Markdown</option>
+                    </select>
+                </div>
+                <div>
+                    <label>{{ t['export_score'] }}:</label>
+                    <select id="exportScore" class="select" style="margin-left:8px;">
+                        <option value="0">{{ t['all'] or '全部' }}</option>
+                        <option value="5">5★</option>
+                        <option value="4">4★</option>
+                        <option value="3">3★</option>
+                        <option value="2">2★</option>
+                        <option value="1">1★</option>
+                    </select>
+                </div>
             </div>
         </div>
         <div style="text-align:right;">
@@ -130,8 +143,9 @@ function closeExportDialog() {
 document.getElementById('exportConfirmBtn').onclick = async function() {
     const format = document.getElementById('exportFormat').value;
     const type = document.getElementById('exportType').value;
+    const score = document.getElementById('exportScore').value;
     closeExportDialog();
-    await exportDatasets(Array.from(selectedFiles), format, type);
+    await exportDatasets(Array.from(selectedFiles), format, type, score);
 }
 
 async function loadDatasets() {
@@ -149,9 +163,9 @@ async function loadDatasets() {
     });
 }
 
-async function exportDatasets(fileIds, format = 'alpaca', type = 'json') {
+async function exportDatasets(fileIds, format = 'alpaca', type = 'json', score = '0') {
     const t = window._t;
-    const resp = await fetch(`/api/datasets_export?ids=${fileIds.join(',')}&format=${format}&type=${type}`, {method:'GET'});
+    const resp = await fetch(`/api/datasets_export?ids=${fileIds.join(',')}&format=${format}&type=${type}&score=${score}`, {method:'GET'});
     if (resp.ok) {
         const blob = await resp.blob();
         let ext = type;

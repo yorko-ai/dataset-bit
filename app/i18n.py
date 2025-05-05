@@ -66,6 +66,8 @@ LANGS = {
         'export_cancel': '取消',
         'export_success': '导出成功',
         'export_fail': '导出失败',
+        'export_score': '导出星级',
+        'all': '全部',
         
         # 系统设置页面相关
         'settings_manage': '系统设置',
@@ -91,6 +93,7 @@ LANGS = {
         'test_fail': '连接失败',
         'generate_qa_count': '生成QA对数量',
         'generate_by_llm': '大模型生成',
+        'model_generate': '模型生成',
         'operation': '操作',
         'select_file': '请选择文件',
         'no_qa_pairs': '暂无问答对',
@@ -101,6 +104,17 @@ LANGS = {
         'generate_qa_fail_title': '生成失败',
         'generate_qa_fail_msg': '问答生成失败',
         'testing': '正在连接...',
+        # 新增评分模型和问答模型相关key
+        'score_model_settings': '评分模型设置',
+        'score_api_url': '评分API地址',
+        'score_api_url_placeholder': '请输入评分API地址',
+        'score_api_key': '评分API密钥',
+        'score_api_key_placeholder': '请输入评分API密钥',
+        'score_model_name': '评分模型名称',
+        'score_model_name_placeholder': '请输入评分模型名称',
+        'qa_model_settings': '问答模型设置',
+        'lang_zh': '简体中文',
+        'lang_en': '英文',
     },
     'en': {
         'menu_file': 'File',
@@ -169,6 +183,8 @@ LANGS = {
         'export_cancel': 'Cancel',
         'export_success': 'Export Success',
         'export_fail': 'Export Failed',
+        'export_score': 'Export Score',
+        'all': 'All',
         
         # Settings related
         'settings_manage': 'System Settings',
@@ -194,6 +210,7 @@ LANGS = {
         'test_fail': 'Test Failed',
         'generate_qa_count': 'QA Pairs to Generate',
         'generate_by_llm': 'Generate by LLM',
+        'model_generate': 'Model Generate',
         'operation': 'Operation',
         'select_file': 'Select File',
         'no_qa_pairs': 'No QA Pairs',
@@ -204,5 +221,16 @@ LANGS = {
         'generate_qa_fail_title': 'Generation Failed',
         'generate_qa_fail_msg': 'QA generation failed',
         'testing': 'Testing connection...',
+        # 新增评分模型和问答模型相关key
+        'score_model_settings': 'Score Model Settings',
+        'score_api_url': 'Score API URL',
+        'score_api_url_placeholder': 'Please enter score API URL',
+        'score_api_key': 'Score API Key',
+        'score_api_key_placeholder': 'Please enter score API Key',
+        'score_model_name': 'Score Model Name',
+        'score_model_name_placeholder': 'Please enter score model name',
+        'qa_model_settings': 'QA Model Settings',
+        'lang_zh': 'Chinese',
+        'lang_en': 'English',
     }
 } 
