@@ -125,6 +125,9 @@ python -m app.main
 ### 配置参数
 
 #### 文本处理参数
+
+![file](frontend/static/file.png)
+
 ```json
 {
   "method": "auto",        // 分块方式：auto（智能递归分层）、heading（按标题）、paragraph（按段落）、table（按表格单元）

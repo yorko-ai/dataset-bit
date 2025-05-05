@@ -124,6 +124,9 @@ python -m app.main
 ### Configuration Parameters
 
 #### Text Processing Parameters
+
+![file](frontend/static/file.png)
+
 ```json
 {
   "method": "auto",        // Split method: auto (smart recursive), heading, paragraph, table
