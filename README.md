@@ -36,7 +36,6 @@ Dataset-Bit 是一个强大的开源工具，专门用于生成和优化大型�
 
 ### 前端
 - **框架**：Vue.js 3
-- **构建工具**：Vite
 - **UI 组件**：Element Plus
 - **状态管理**：Pinia
 - **HTTP 客户端**：Axios
@@ -45,7 +44,6 @@ Dataset-Bit 是一个强大的开源工具，专门用于生成和优化大型�
 
 ### 系统要求
 - Python 3.8 或更高版本
-- Node.js 16 或更高版本
 - 至少 4GB RAM
 - 稳定的网络连接
 

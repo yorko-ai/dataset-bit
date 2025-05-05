@@ -35,7 +35,6 @@ Dataset-Bit is a powerful open-source tool designed for generating and optimizin
 
 ### Frontend
 - **Framework**: Vue.js 3
-- **Build Tool**: Vite
 - **UI Components**: Element Plus
 - **State Management**: Pinia
 - **HTTP Client**: Axios
@@ -44,9 +43,8 @@ Dataset-Bit is a powerful open-source tool designed for generating and optimizin
 
 ### System Requirements
 - Python 3.8 or higher
-- Node.js 16 or higher
-- Minimum 4GB RAM
-- Stable internet connection
+- At least 4GB RAM
+- Stable network connection
 
 ### Database Initialization
 This project uses SQLite. Before the first run, please initialize the database structure with:
