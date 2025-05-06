@@ -1,3 +1,10 @@
+-- Drop existing tables if they exist
+DROP TABLE IF EXISTS files;
+DROP TABLE IF EXISTS text_segments;
+DROP TABLE IF EXISTS qa_pairs;
+DROP TABLE IF EXISTS segments;
+DROP TABLE IF EXISTS settings;
+
 -- files table
 CREATE TABLE files (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -6,8 +13,9 @@ CREATE TABLE files (
                     file_type TEXT NOT NULL,
                     file_size INTEGER NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                , status TEXT DEFAULT '待处理');
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT DEFAULT '待处理'
+                );
 
 
 -- text_segments table
@@ -64,7 +72,13 @@ CREATE TABLE settings (
 -- Insert test data
 
 -- files table test data
-INSERT OR IGNORE INTO files (filename,file_path,file_size,file_type,status,upload_time) VALUES ('test_file_1.docx','./uploads/test_file_1.docx',5740,'docx','done','2025-05-04 18:00:57'),('test_file_2.md','./uploads/test_file_2.md',3090,'md','pending','2025-05-03 18:00:57'),('test_file_3.md','./uploads/test_file_3.md',5837,'md','pending','2025-05-02 18:00:57'),('test_file_4.pdf','./uploads/test_file_4.pdf',5776,'pdf','done','2025-05-01 18:00:57'),('test_file_5.txt','./uploads/test_file_5.txt',2194,'txt','pending','2025-04-30 18:00:57');
+INSERT OR IGNORE INTO files (filename, file_path, file_size, file_type, status, created_at) 
+VALUES 
+    ('test_file_1.docx', './uploads/test_file_1.docx', 5740, 'docx', 'done', '2025-05-04 18:00:57'),
+    ('test_file_2.md', './uploads/test_file_2.md', 3090, 'md', 'pending', '2025-05-03 18:00:57'),
+    ('test_file_3.md', './uploads/test_file_3.md', 5837, 'md', 'pending', '2025-05-02 18:00:57'),
+    ('test_file_4.pdf', './uploads/test_file_4.pdf', 5776, 'pdf', 'done', '2025-05-01 18:00:57'),
+    ('test_file_5.txt', './uploads/test_file_5.txt', 2194, 'txt', 'pending', '2025-04-30 18:00:57');
 
 -- qa_pairs table test data
 INSERT OR IGNORE INTO qa_pairs (segment_id,question,answer,score) VALUES (1,'What is the main content of chunk 1?','This is the answer for chunk 1, question 1...',5),(2,'What is the main content of chunk 2?','This is the answer for chunk 2, question 1...',4),(2,'What is the main content of chunk 2?','This is the answer for chunk 2, question 2...',3),(2,'What is the main content of chunk 2?','This is the answer for chunk 2, question 3...',2),(3,'What is the main content of chunk 3?','This is the answer for chunk 3, question 1...',1),(4,'What is the main content of chunk 4?','This is the answer for chunk 4, question 1...',5),(4,'What is the main content of chunk 4?','This is the answer for chunk 4, question 2...',4),(4,'What is the main content of chunk 4?','This is the answer for chunk 4, question 3...',3),(5,'What is the main content of chunk 5?','This is the answer for chunk 5, question 1...',2),(5,'What is the main content of chunk 5?','This is the answer for chunk 5, question 2...',1);
