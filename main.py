@@ -36,14 +36,20 @@ load_dotenv()
 
 # 配置日志
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('app.log'),
-        logging.StreamHandler()
+        logging.FileHandler('app.log', encoding='utf-8')
     ]
 )
 logger = logging.getLogger(__name__)
+
+# 设置所有第三方库的日志级别为WARNING
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("uvicorn").setLevel(logging.WARNING)
+logging.getLogger("fastapi").setLevel(logging.WARNING)
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -1519,7 +1525,7 @@ async def auto_score_qa_pairs(data: dict = Body(...)):
                     stream=False
                 )
                 score_str = response.choices[0].message.content.strip()
-                logger.info(f"评分返回内容(qa_id={qa_id}): {score_str}")
+                logger.debug(f"评分返回内容(qa_id={qa_id}): {score_str}")
                 def extract_score(score_str):
                     match = re.search(r'([1-5])', score_str)
                     if match:
