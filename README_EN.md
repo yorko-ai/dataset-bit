@@ -145,4 +145,54 @@ Thanks to all contributors and users of this project!
 
 ---
 
-For Chinese documentation, see [README.md] 
+For Chinese documentation, see [README.md]
+
+## Quick Start
+
+### 1. Pull the image
+
+```bash
+docker pull yorko/dataset-bit:latest
+```
+
+### 2. Run the container
+
+```bash
+docker run -d -p 8000:8000 yorko/dataset-bit:latest
+```
+
+Then open [http://localhost:8000](http://localhost:8000) in your browser.
+
+## Advanced Usage (Docker Compose)
+
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+
+services:
+  web:
+    image: yorko/dataset-bit:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+    restart: unless-stopped
+```
+
+Start the service:
+
+```bash
+docker-compose up -d
+```
+
+## Notes
+
+- The image includes an initialized `dataset_bit.db` database and all files in the `uploads` directory at build time.
+- For persistent data, it is recommended to mount the `/app/uploads` and `/app/exports` directories.
+- For development, refer to the `docker-compose.dev.yml` example in the repository.
+
+## License
+
+MIT 

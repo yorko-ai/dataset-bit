@@ -191,6 +191,53 @@ dataset-bit/
 
 ---
 
+## 快速开始
+
+### 1. 拉取镜像
+
+```bash
+docker pull yorko/dataset-bit:latest
+```
+
+### 2. 运行容器
+
+```bash
+docker run -d -p 8000:8000 yorko/dataset-bit:latest
+```
+
+然后在浏览器中打开 [http://localhost:8000](http://localhost:8000)。
+
+## 进阶用法（Docker Compose）
+
+创建一个 `docker-compose.yml` 文件：
+
+```yaml
+version: '3.8'
+
+services:
+  web:
+    image: yorko/dataset-bit:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8000
+    restart: unless-stopped
+```
+
+启动服务：
+
+```bash
+docker-compose up -d
+```
+
+## 注意事项
+
+- 镜像内自带初始化好的 `dataset_bit.db` 数据库和构建时 `uploads` 目录下的所有文件。
+- 如需持久化数据，建议挂载 `/app/uploads` 和 `/app/exports` 目录。
+
+---
+
 ## 📝 贡献与反馈
 - 欢迎提交issue、PR、建议
 - 详细开发规范、二次开发建议见代码注释与API文档

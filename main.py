@@ -960,7 +960,8 @@ def read_file_content(file_path, file_type):
         return '\n'.join([p.text for p in doc.paragraphs])
     elif file_type == 'pdf':
         reader = PyPDF2.PdfReader(file_path)
-        return '\n'.join([page.extract_text() or '' for page in reader.pages])
+        # 页与页之间用两个换行分隔，便于后续分段
+        return '\n\n'.join([page.extract_text() or '' for page in reader.pages])
     else:
         return ''
 
@@ -1000,6 +1001,7 @@ def split_content(content, method, block_size, overlap):
     paragraph_splitter = r'(?:\n\s*){2,}'
     if method == "paragraph":
         blocks = [seg for seg in re.split(paragraph_splitter, content) if seg.strip()]
+        return blocks  # 只保留完整段落，不再切分
     elif method == "heading":
         # 每个标题块合并为一个分块
         blocks = split_by_heading(content)
