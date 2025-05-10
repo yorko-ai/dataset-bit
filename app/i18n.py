@@ -115,6 +115,7 @@ LANGS = {
         'qa_model_settings': '问答模型设置',
         'lang_zh': '简体中文',
         'lang_en': '英文',
+        'model_score': '模型评分',
     },
     'en': {
         'menu_file': 'File',
@@ -232,5 +233,6 @@ LANGS = {
         'qa_model_settings': 'QA Model Settings',
         'lang_zh': 'Chinese',
         'lang_en': 'English',
+        'model_score': 'Model Score',
     }
 } 
